@@ -122,7 +122,7 @@
       </form>
       <p id="loginMessage" class="error" role="status"></p>
       <div id="countdown" class="countdown" aria-live="polite"></div>
-      <p class="hint">Nach 3 falschen Anmeldeversuchen wird der Login für 60 Sekunden gesperrt.</p>
+      <p id="loginHint" class="hint">Nach 3 falschen Anmeldeversuchen wird der Login für 60 Sekunden gesperrt.</p>
     </section>
 
     <section id="appArea">
@@ -215,6 +215,19 @@
         </div>
 
         <div class="panel">
+          <h2>Standard-Login-Timeout</h2>
+          <p class="muted">Legt fest, wie lange ein Benutzer nach 3 Fehlversuchen gesperrt wird.</p>
+          <div class="row" style="align-items:flex-end;">
+            <div style="flex:1; min-width:220px;">
+              <label for="defaultTimeoutSeconds">Sekunden</label>
+              <input id="defaultTimeoutSeconds" type="number" min="5" step="5" value="60">
+            </div>
+            <button type="button" id="saveTimeoutBtn">Speichern</button>
+          </div>
+          <p id="timeoutSettingsMessage" class="hint"></p>
+        </div>
+
+        <div class="panel">
           <div class="row" style="justify-content:space-between"><h2>Anmeldeverlauf</h2><button class="secondary" id="clearLogsBtn" type="button">Verlauf löschen</button></div>
           <div id="logs"></div>
         </div>
@@ -242,7 +255,8 @@
       groups: 'my-app-center-groups-v1',
       users: 'mac-admin-users-v2',
       logs: 'mac-admin-log-v2',
-      session: 'mac-session-v2'
+      session: 'mac-session-v2',
+      loginTimeout: 'mac-login-timeout-v1'
     };
 
     const LOGIN_SETTINGS = {
@@ -297,6 +311,35 @@
       setTimeout(() => el.remove(), 2300);
     }
 
+    function readLoginTimeoutMs() {
+      const saved = Number(localStorage.getItem(KEYS.loginTimeout));
+      if (!Number.isFinite(saved) || saved < 1000) {
+        return LOGIN_SETTINGS.lockDurationMs;
+      }
+      return saved;
+    }
+
+    function saveLoginTimeoutMs(ms) {
+      const value = Number(ms);
+      const safe = Number.isFinite(value) && value >= 1000 ? value : LOGIN_SETTINGS.lockDurationMs;
+      localStorage.setItem(KEYS.loginTimeout, String(safe));
+      return safe;
+    }
+
+    function renderLoginTimeoutSetting() {
+      const seconds = Math.round(readLoginTimeoutMs() / 1000);
+      const input = $('defaultTimeoutSeconds');
+      if (input) input.value = seconds;
+      const hint = $('loginHint');
+      if (hint) {
+        hint.textContent = `Nach 3 falschen Anmeldeversuchen wird der Login für ${seconds} Sekunden gesperrt.`;
+      }
+      const msg = $('timeoutSettingsMessage');
+      if (msg) {
+        msg.textContent = `Aktueller Standard: ${seconds} Sekunden.`;
+      }
+    }
+
     function getRemainingSeconds(user) {
       if (!user || !user.timeoutUntil || Number(user.timeoutUntil) <= Date.now()) return 0;
       return Math.max(0, Math.ceil((Number(user.timeoutUntil) - Date.now()) / 1000));
@@ -347,6 +390,7 @@
       $('loginPass').disabled = false;
       $('countdown').textContent = '';
       $('loginMessage').textContent = '';
+      renderLoginTimeoutSetting();
     }
 
     function showApp() {
@@ -372,6 +416,7 @@
       if (id === 'adminView') {
         renderUsers();
         renderLogs();
+        renderLoginTimeoutSetting();
       }
     }
 
@@ -417,9 +462,10 @@
 
         if (found.failedAttempts >= LOGIN_SETTINGS.maxFailedAttempts) {
           found.failedAttempts = LOGIN_SETTINGS.maxFailedAttempts;
-          found.timeoutUntil = Date.now() + LOGIN_SETTINGS.lockDurationMs;
+          const lockMs = readLoginTimeoutMs();
+          found.timeoutUntil = Date.now() + lockMs;
           found.accountLocked = true;
-          $('loginMessage').textContent = 'Drei falsche Versuche. Das Konto wurde für 60 Sekunden gesperrt.';
+          $('loginMessage').textContent = `Drei falsche Versuche. Das Konto wurde für ${Math.round(lockMs / 1000)} Sekunden gesperrt.`;
         } else {
           $('loginMessage').textContent = `Benutzername oder Passwort falsch. Noch ${LOGIN_SETTINGS.maxFailedAttempts - found.failedAttempts} Versuch(e).`;
         }
@@ -444,6 +490,14 @@
       $('loginUser').value = '';
       $('loginPass').value = '';
       showLogin();
+    });
+
+    $('saveTimeoutBtn')?.addEventListener('click', () => {
+      const seconds = Number($('defaultTimeoutSeconds').value);
+      const ms = saveLoginTimeoutMs(seconds * 1000);
+      $('timeoutSettingsMessage').textContent = `Standard-Timeout gespeichert: ${Math.round(ms / 1000)} Sekunden.`;
+      renderLoginTimeoutSetting();
+      toast('Standard-Timeout gespeichert.');
     });
 
     function saveApps() {
@@ -1008,65 +1062,50 @@
 
     $('searchGroups').addEventListener('input', renderGroups);
     $('exportGroups').addEventListener('click', () => {
-      const blob = new Blob([JSON.stringify(groups, null, 2)], { type: 'application/json' });
+      const data = JSON.stringify(groups, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'my-app-center-gruppen.json';
-      document.body.append(a);
+      a.download = 'my-app-center-groups.json';
       a.click();
-      a.remove();
       URL.revokeObjectURL(url);
+      toast('Gruppen exportiert.');
     });
-
     $('importGroups').addEventListener('click', () => $('groupImportFile').click());
-    $('groupImportFile').addEventListener('change', async (event) => {
-      const file = event.target.files?.[0];
+    $('groupImportFile').addEventListener('change', (event) => {
+      const file = event.target.files[0];
       if (!file) return;
-
-      try {
-        const data = JSON.parse(await file.text());
-        if (!Array.isArray(data) || !data.every((g) => g && typeof g.name === 'string' && Array.isArray(g.members))) {
-          throw new Error('Format');
-        }
-        const imported = data.map((g) => ({
-          id: uid(),
-          name: g.name.slice(0, 50),
-          members: g.members.filter((m) => m && typeof m.name === 'string').map((m) => ({ id: uid(), name: m.name.slice(0, 50) }))
-        }));
-        if (confirm(`${imported.length} Gruppen importieren? Vorhandene Gruppen bleiben erhalten.`)) {
-          groups = [...imported, ...groups];
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (!Array.isArray(parsed)) throw new Error('Nicht gültig');
+          groups = parsed;
           persistGroups();
-          toast('Import abgeschlossen.');
+          toast('Gruppen importiert.');
+        } catch {
+          toast('Import fehlgeschlagen.');
         }
-      } catch {
-        toast('Datei konnte nicht importiert werden.');
-      } finally {
-        event.target.value = '';
-      }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
     });
 
-    async function initApp() {
+    document.addEventListener('DOMContentLoaded', async () => {
       await initUsers();
-      apps = read(KEYS.apps, []);
-      groups = read(KEYS.groups, []);
-      logs = read(KEYS.logs, []);
-
-      const savedSession = sessionStorage.getItem(KEYS.session);
-      current = users.find((user) => user.id === savedSession) || null;
+      renderLoginTimeoutSetting();
+      users = read(KEYS.users, []);
+      const storedSession = sessionStorage.getItem(KEYS.session);
+      current = users.find((u) => u.id === storedSession) || null;
 
       if (current) {
         showApp();
       } else {
         showLogin();
       }
-
-      renderApps();
-      renderGroups();
-      renderLogs();
-    }
-
-    initApp();
+    });
   </script>
 </body>
 </html>
+

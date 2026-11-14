@@ -46,7 +46,7 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{t
 .modal{width:min(440px,100%);background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:22px}
 .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}
 .hidden{display:none!important}.notice{color:var(--muted);font-size:12px;line-height:1.5;margin-top:18px}
-@media(max-width:600px){.grid{grid-template-columns:1fr}.app-item,.user-item{flex-direction:column;align-items:stretch}.app-main{width:100%}.actions>*{flex:1}.topbar{align-items:flex-start}.stats{gap:7px}.stat{padding:10px}.stat-number{font-size:20px}table{font-size:12px}th,td{padding:7px 5px}}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.app-item,.user-item{flex-direction:column;align-items:stretch}.app-main{width:100%}.actions>*{flex:1}.topbar{align-items:flex-start}.stats{grid-template-columns:1fr}.table{font-size:12px}}
 </style>
 </head>
 <body>
@@ -144,13 +144,13 @@ table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{t
 <script>
 'use strict';
 const KEYS={
- apps:'my-app-center-v1',
- groups:'my-app-center-groups-v1',
- users:'mac-admin-users-v2',
- logs:'mac-admin-log-v2',
- failures:'mac-login-failures-v2',
- lock:'mac-login-lock-v2',
- session:'mac-session-v2'
+  apps:'my-app-center-v1',
+  groups:'my-app-center-groups-v1',
+  users:'mac-admin-users-v2',
+  logs:'mac-admin-log-v2',
+  failures:'mac-login-failures-v2',
+  lock:'mac-login-lock-v2',
+  session:'mac-session-v2'
 };
 const DEFAULT_ADMIN={username:'Pokemon2',password:'Hallo226'};
 const $=id=>document.getElementById(id);
@@ -164,245 +164,292 @@ function safeUrl(value){try{const u=new URL(value);return ['https:','http:'].inc
 function toast(message){const old=$('toastMessage');if(old)old.remove();const el=document.createElement('div');el.id='toastMessage';el.textContent=message;el.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111827;color:white;padding:11px 16px;border-radius:10px;z-index:20;max-width:90%;text-align:center';document.body.append(el);setTimeout(()=>el.remove(),2300)}
 
 async function initUsers(){
- users=read(KEYS.users,[]);
- if(!Array.isArray(users)||users.length===0){
-  users=[{id:uid(),username:DEFAULT_ADMIN.username,passwordHash:await hash(DEFAULT_ADMIN.password),role:'admin'}];
+  users=read(KEYS.users,[]);
+  if(!Array.isArray(users)||users.length===0){
+    users=[{id:uid(),username:DEFAULT_ADMIN.username,passwordHash:await hash(DEFAULT_ADMIN.password),role:'admin',accountLocked:false}];
+    write(KEYS.users,users);
+  }
+  users=users.map(user=>({
+    ...user,
+    accountLocked: !!user.accountLocked,
+    lockedPasswordHash: user.lockedPasswordHash || null
+  }));
   write(KEYS.users,users);
- }
 }
 function recordLogin(username,success){
- logs=read(KEYS.logs,[]);
- logs.unshift({username,success,time:new Date().toLocaleString('de-DE')});
- logs=logs.slice(0,200);write(KEYS.logs,logs);
+  logs=read(KEYS.logs,[]);
+  logs.unshift({username,success,time:new Date().toLocaleString('de-DE')});
+  logs=logs.slice(0,200);write(KEYS.logs,logs);
 }
 function showLogin(){
- $('loginArea').style.display='block';$('appArea').style.display='none';
- $('loginUser').disabled=false;$('loginPass').disabled=false;updateLock();
+  $('loginArea').style.display='block';$('appArea').style.display='none';
+  $('loginUser').disabled=false;$('loginPass').disabled=false;updateLock();
 }
 function showApp(){
- $('loginArea').style.display='none';$('appArea').style.display='block';
- $('currentUser').textContent=current.username+(current.role==='admin'?' · Administrator':' · Benutzer');
- $('adminTab').hidden=current.role!=='admin';
- $('appEditor').classList.toggle('hidden',current.role!=='admin');
- $('clearAppsBtn').classList.toggle('hidden',current.role!=='admin');
- document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view==='appsView'));
- document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='appsView'));
- apps=read(KEYS.apps,[]);groups=read(KEYS.groups,[]);
- renderApps();renderGroups();
- if(current.role==='admin'){renderUsers();renderLogs()}
+  $('loginArea').style.display='none';$('appArea').style.display='block';
+  $('currentUser').textContent=current.username+(current.role==='admin'?' · Administrator':' · Benutzer');
+  $('adminTab').hidden=current.role!=='admin';
+  $('appEditor').classList.toggle('hidden',current.role!=='admin');
+  $('clearAppsBtn').classList.toggle('hidden',current.role!=='admin');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view==='appsView'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='appsView'));
+  apps=read(KEYS.apps,[]);groups=read(KEYS.groups,[]);
+  renderApps();renderGroups();
+  if(current.role==='admin'){renderUsers();renderLogs()}
 }
 function showView(id){
- if(id==='adminView'&&current?.role!=='admin')return;
- document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));
- document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
- if(id==='adminView'){renderUsers();renderLogs()}
+  if(id==='adminView'&&current?.role!=='admin')return;
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
+  if(id==='adminView'){renderUsers();renderLogs()}
 }
 document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
 
 function updateLock(){
- const until=Number(localStorage.getItem(KEYS.lock)||0);
- const seconds=Math.max(0,Math.ceil((until-Date.now())/1000));
- const locked=seconds>0;
- $('loginBtn').disabled=locked;$('loginUser').disabled=locked;$('loginPass').disabled=locked;
- $('countdown').textContent=locked?`Gesperrt – noch ${seconds} Sekunden`: '';
- if(!locked&&until){localStorage.removeItem(KEYS.lock);localStorage.removeItem(KEYS.failures);$('loginMessage').textContent='Du kannst dich jetzt wieder anmelden.'}
- return locked;
+  const until=Number(localStorage.getItem(KEYS.lock)||0);
+  const seconds=Math.max(0,Math.ceil((until-Date.now())/1000));
+  const locked=seconds>0;
+  $('loginBtn').disabled=locked;$('loginUser').disabled=locked;$('loginPass').disabled=locked;
+  $('countdown').textContent=locked?`Gesperrt – noch ${seconds} Sekunden`: '';
+  if(!locked&&until){localStorage.removeItem(KEYS.lock);localStorage.removeItem(KEYS.failures);$('loginMessage').textContent='Du kannst dich jetzt wieder anmelden.'}
+  return locked;
 }
 function startLockTimer(){
- if(lockTimer)clearInterval(lockTimer);
- lockTimer=setInterval(()=>{if(!updateLock()){clearInterval(lockTimer);lockTimer=null}},250);
+  if(lockTimer)clearInterval(lockTimer);
+  lockTimer=setInterval(()=>{if(!updateLock()){clearInterval(lockTimer);lockTimer=null}},250);
 }
 $('loginForm').addEventListener('submit',async event=>{
- event.preventDefault();if(updateLock())return;
- const username=$('loginUser').value.trim(),password=$('loginPass').value;
- const found=users.find(u=>u.username.toLowerCase()===username.toLowerCase());
- const valid=!!found&&found.passwordHash===await hash(password);
- if(!valid){
-  recordLogin(username,false);
-  const fails=Number(localStorage.getItem(KEYS.failures)||0)+1;
-  if(fails>=3){localStorage.setItem(KEYS.failures,'0');localStorage.setItem(KEYS.lock,String(Date.now()+60000));$('loginMessage').textContent='Drei falsche Versuche. Bitte warte eine Minute.';startLockTimer()}
-  else{localStorage.setItem(KEYS.failures,String(fails));$('loginMessage').textContent=`Benutzername oder Passwort falsch. Noch ${3-fails} Versuch(e).`}
-  $('loginPass').value='';return;
- }
- localStorage.removeItem(KEYS.failures);localStorage.removeItem(KEYS.lock);
- recordLogin(username,true);current=found;sessionStorage.setItem(KEYS.session,current.id);
- $('loginMessage').textContent='';$('loginPass').value='';showApp();
+  event.preventDefault();if(updateLock())return;
+  const username=$('loginUser').value.trim(),password=$('loginPass').value;
+  const found=users.find(u=>u.username.toLowerCase()===username.toLowerCase());
+  if(!found){
+    recordLogin(username,false);
+    const fails=Number(localStorage.getItem(KEYS.failures)||0)+1;
+    if(fails>=3){localStorage.setItem(KEYS.failures,'0');localStorage.setItem(KEYS.lock,String(Date.now()+60000));$('loginMessage').textContent='Drei falsche Versuche. Bitte warte eine Minute.';startLockTimer();}
+    else{localStorage.setItem(KEYS.failures,String(fails));$('loginMessage').textContent=`Benutzername oder Passwort falsch. Noch ${3-fails} Versuch(e).`}
+    $('loginPass').value='';return;
+  }
+  if(found.accountLocked){
+    recordLogin(username,false);
+    $('loginMessage').textContent='Dieses Konto ist gesperrt. Bitte den Administrator kontaktieren.';
+    $('loginPass').value='';
+    return;
+  }
+  const valid=found.passwordHash===await hash(password);
+  if(!valid){
+    recordLogin(username,false);
+    const fails=Number(localStorage.getItem(KEYS.failures)||0)+1;
+    if(fails>=3){localStorage.setItem(KEYS.failures,'0');localStorage.setItem(KEYS.lock,String(Date.now()+60000));$('loginMessage').textContent='Drei falsche Versuche. Bitte warte eine Minute.';startLockTimer();}
+    else{localStorage.setItem(KEYS.failures,String(fails));$('loginMessage').textContent=`Benutzername oder Passwort falsch. Noch ${3-fails} Versuch(e).`}
+    $('loginPass').value='';return;
+  }
+  localStorage.removeItem(KEYS.failures);localStorage.removeItem(KEYS.lock);
+  recordLogin(username,true);current=found;sessionStorage.setItem(KEYS.session,current.id);
+  $('loginMessage').textContent='';$('loginPass').value='';showApp();
 });
 $('logoutBtn').addEventListener('click',()=>{
- sessionStorage.removeItem(KEYS.session);current=null;$('loginUser').value='';$('loginPass').value='';showLogin();
+  sessionStorage.removeItem(KEYS.session);current=null;$('loginUser').value='';$('loginPass').value='';showLogin();
 });
 
 function saveApps(){write(KEYS.apps,apps);renderApps()}
 function resetAppForm(){editingAppId=null;$('appForm').reset();$('emoji').value='🌐';$('appSaveBtn').textContent='App hinzufügen';$('cancelAppBtn').classList.add('hidden')}
 function editApp(app){editingAppId=app.id;$('name').value=app.name;$('url').value=app.url;$('emoji').value=app.emoji||'🌐';$('appSaveBtn').textContent='Änderungen speichern';$('cancelAppBtn').classList.remove('hidden');$('name').focus()}
 function renderApps(){
- $('count').textContent=`${apps.length} ${apps.length===1?'App':'Apps'}`;
- const host=$('apps');host.replaceChildren();
- if(!apps.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Noch keine Apps vorhanden.';host.append(empty);return}
- apps.forEach(app=>{
-  const item=document.createElement('article');item.className='app-item';
-  const main=document.createElement('div');main.className='app-main';
-  const icon=document.createElement('div');icon.className='emoji';icon.textContent=app.emoji||'🌐';
-  const meta=document.createElement('div');meta.style.minWidth='0';meta.style.flex='1';
-  const name=document.createElement('div');name.className='name';name.textContent=app.name;
-  const url=document.createElement('div');url.className='url';url.textContent=app.url;
-  meta.append(name,url);main.append(icon,meta);
-  const actions=document.createElement('div');actions.className='actions';
-  const open=document.createElement('button');open.type='button';open.textContent='Öffnen';open.onclick=()=>{const target=safeUrl(app.url);if(target)window.open(target,'_blank','noopener')};
-  actions.append(open);
-  if(current.role==='admin'){
-   const edit=document.createElement('button');edit.type='button';edit.className='secondary';edit.textContent='Bearbeiten';edit.onclick=()=>editApp(app);
-   const del=document.createElement('button');del.type='button';del.className='danger';del.textContent='Löschen';del.onclick=()=>{if(confirm(`App „${app.name}“ löschen?`)){apps=apps.filter(x=>x.id!==app.id);saveApps()}};
-   actions.append(edit,del);
-  }
-  item.append(main,actions);host.append(item);
- });
+  $('count').textContent=`${apps.length} ${apps.length===1?'App':'Apps'}`;
+  const host=$('apps');host.replaceChildren();
+  if(!apps.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Noch keine Apps vorhanden.';host.append(empty);return}
+  apps.forEach(app=>{
+   const item=document.createElement('article');item.className='app-item';
+   const main=document.createElement('div');main.className='app-main';
+   const icon=document.createElement('div');icon.className='emoji';icon.textContent=app.emoji||'🌐';
+   const meta=document.createElement('div');meta.style.minWidth='0';meta.style.flex='1';
+   const name=document.createElement('div');name.className='name';name.textContent=app.name;
+   const url=document.createElement('div');url.className='url';url.textContent=app.url;
+   meta.append(name,url);main.append(icon,meta);
+   const actions=document.createElement('div');actions.className='actions';
+   const open=document.createElement('button');open.type='button';open.textContent='Öffnen';open.onclick=()=>{const target=safeUrl(app.url);if(target)window.open(target,'_blank','noopener')};
+   actions.append(open);
+   if(current.role==='admin'){
+    const edit=document.createElement('button');edit.type='button';edit.className='secondary';edit.textContent='Bearbeiten';edit.onclick=()=>editApp(app);
+    const del=document.createElement('button');del.type='button';del.className='danger';del.textContent='Löschen';del.onclick=()=>{if(confirm(`App „${app.name}“ löschen?`)){apps=apps.filter(x=>x.id!==app.id);saveApps();resetAppForm();}};
+    actions.append(edit,del);
+   }
+   item.append(main,actions);host.append(item);
+  });
 }
 $('appForm').addEventListener('submit',event=>{
- event.preventDefault();if(current?.role!=='admin')return;
- const name=$('name').value.trim(),url=safeUrl($('url').value.trim()),emoji=$('emoji').value.trim()||'🌐';
- if(!name||!url){alert('Bitte einen gültigen Namen und Link eingeben.');return}
- if(editingAppId===null)apps.push({id:uid(),name,url,emoji});
- else apps=apps.map(a=>a.id===editingAppId?{...a,name,url,emoji}:a);
- saveApps();resetAppForm();toast('App gespeichert.');
+  event.preventDefault();if(current?.role!=='admin')return;
+  const name=$('name').value.trim(),url=safeUrl($('url').value.trim()),emoji=$('emoji').value.trim()||'🌐';
+  if(!name||!url){alert('Bitte einen gültigen Namen und Link eingeben.');return}
+  if(editingAppId===null)apps.push({id:uid(),name,url,emoji});
+  else apps=apps.map(a=>a.id===editingAppId?{...a,name,url,emoji}:a);
+  saveApps();resetAppForm();toast('App gespeichert.');
 });
 $('cancelAppBtn').addEventListener('click',resetAppForm);
 $('clearAppsBtn').addEventListener('click',()=>{if(current?.role==='admin'&&confirm('Wirklich alle Apps löschen?')){apps=[];saveApps();resetAppForm()}});
 
+function toggleUserLock(user){
+  if(user.id===current.id)return;
+  if(user.accountLocked){
+    user.accountLocked=false;
+    if(user.lockedPasswordHash){
+      user.passwordHash=user.lockedPasswordHash;
+      delete user.lockedPasswordHash;
+    }
+    toast(`${user.username} wurde entsperrt.`);
+  }else{
+    user.lockedPasswordHash=user.passwordHash;
+    user.passwordHash=`locked-${uid()}`;
+    user.accountLocked=true;
+    toast(`${user.username} wurde gesperrt.`);
+  }
+  write(KEYS.users,users);renderUsers();
+}
+async function resetUserPassword(user){
+  const password=prompt(`Neues Passwort für ${user.username} eingeben (mindestens 4 Zeichen):`);
+  if(password===null)return;
+  const trimmed=password.trim();
+  if(trimmed.length<4){toast('Das Passwort muss mindestens 4 Zeichen haben.');return}
+  user.passwordHash=await hash(trimmed);
+  user.accountLocked=false;
+  delete user.lockedPasswordHash;
+  write(KEYS.users,users);renderUsers();toast(`Passwort für ${user.username} wurde zurückgesetzt.`);
+}
 function renderUsers(){
- const host=$('users');host.replaceChildren();
- users.forEach(user=>{
-  const row=document.createElement('div');row.className='user-item';
-  const info=document.createElement('div');info.innerHTML='';
-  const title=document.createElement('div');title.className='name';title.textContent=user.username;
-  const role=document.createElement('div');role.className='group-meta';role.textContent=user.role==='admin'?'Administrator':'Benutzer';
-  info.append(title,role);
-  const actions=document.createElement('div');actions.className='actions';
-  const edit=document.createElement('button');edit.className='secondary';edit.type='button';edit.textContent='Bearbeiten';edit.onclick=()=>editUser(user);
-  const roleBtn=document.createElement('button');roleBtn.className='secondary';roleBtn.type='button';roleBtn.textContent=user.role==='admin'?'Zum Benutzer machen':'Zum Admin machen';
-  roleBtn.disabled=user.id===current.id||(user.role==='admin'&&users.filter(x=>x.role==='admin').length===1);
-  roleBtn.onclick=()=>{user.role=user.role==='admin'?'user':'admin';write(KEYS.users,users);renderUsers();toast('Benutzerrolle geändert.')};
-  const del=document.createElement('button');del.className='danger';del.type='button';del.textContent='Löschen';
-  del.disabled=user.id===current.id||(user.role==='admin'&&users.filter(x=>x.role==='admin').length===1);
-  del.onclick=()=>{if(confirm(`Benutzer ${user.username} löschen?`)){users=users.filter(x=>x.id!==user.id);write(KEYS.users,users);renderUsers()}};
-  actions.append(edit,roleBtn,del);row.append(info,actions);host.append(row);
- });
+  const host=$('users');host.replaceChildren();
+  users.forEach(user=>{
+   const row=document.createElement('div');row.className='user-item';
+   const info=document.createElement('div');
+   const title=document.createElement('div');title.className='name';title.textContent=user.username;
+   const status=document.createElement('div');status.className='group-meta';status.textContent=`${user.role==='admin'?'Administrator':'Benutzer'}${user.accountLocked?' · Gesperrt':' · Aktiv'}`;
+   info.append(title,status);
+   const actions=document.createElement('div');actions.className='actions';
+   const edit=document.createElement('button');edit.className='secondary';edit.type='button';edit.textContent='Bearbeiten';edit.onclick=()=>editUser(user);
+   const resetBtn=document.createElement('button');resetBtn.className='secondary';resetBtn.type='button';resetBtn.textContent='Passwort zurücksetzen';resetBtn.onclick=()=>resetUserPassword(user);
+   const roleBtn=document.createElement('button');roleBtn.className='secondary';roleBtn.type='button';roleBtn.textContent=user.role==='admin'?'Zum Benutzer machen':'Zum Admin machen';
+   roleBtn.disabled=user.id===current.id||(user.role==='admin'&&users.filter(x=>x.role==='admin').length===1);
+   roleBtn.onclick=()=>{user.role=user.role==='admin'?'user':'admin';write(KEYS.users,users);renderUsers();toast('Benutzerrolle geändert.')};
+   const lockBtn=document.createElement('button');lockBtn.type='button';lockBtn.className=user.accountLocked?'secondary':'danger';lockBtn.textContent=user.accountLocked?'Entsperren':'Sperren';lockBtn.disabled=user.id===current.id;lockBtn.onclick=()=>toggleUserLock(user);
+   const del=document.createElement('button');del.className='danger';del.type='button';del.textContent='Löschen';
+   del.disabled=user.id===current.id||(user.role==='admin'&&users.filter(x=>x.role==='admin').length===1);
+   del.onclick=()=>{if(confirm(`Benutzer ${user.username} löschen?`)){users=users.filter(x=>x.id!==user.id);write(KEYS.users,users);renderUsers()}};
+   actions.append(edit,resetBtn,lockBtn,roleBtn,del);row.append(info,actions);host.append(row);
+  });
 }
 function resetUserForm(){
- editingUserId=null;$('userForm').reset();$('newPassword').required=true;$('newPassword').placeholder='Mindestens 4 Zeichen';
- $('userSaveBtn').textContent='Benutzer erstellen';$('cancelUserEdit').classList.add('hidden');$('userMessage').textContent='';
+  editingUserId=null;$('userForm').reset();$('newPassword').required=true;$('newPassword').placeholder='Mindestens 4 Zeichen';
+  $('userSaveBtn').textContent='Benutzer erstellen';$('cancelUserEdit').classList.add('hidden');$('userMessage').textContent='';
 }
 function editUser(user){
- editingUserId=user.id;$('newUsername').value=user.username;$('newPassword').value='';$('newPassword').required=false;
- $('newPassword').placeholder='Leer lassen, um Passwort zu behalten';$('newRole').value=user.role;
- $('userSaveBtn').textContent='Benutzer speichern';$('cancelUserEdit').classList.remove('hidden');
+  editingUserId=user.id;$('newUsername').value=user.username;$('newPassword').value='';$('newPassword').required=false;
+  $('newPassword').placeholder='Leer lassen, um Passwort zu behalten';$('newRole').value=user.role;
+  $('userSaveBtn').textContent='Benutzer speichern';$('cancelUserEdit').classList.remove('hidden');
 }
 $('cancelUserEdit').addEventListener('click',resetUserForm);
 $('userForm').addEventListener('submit',async event=>{
- event.preventDefault();if(current?.role!=='admin')return;
- const username=$('newUsername').value.trim(),password=$('newPassword').value,role=$('newRole').value;
- if(!username){$('userMessage').textContent='Bitte einen Benutzernamen eingeben.';return}
- if(users.some(u=>u.username.toLowerCase()===username.toLowerCase()&&u.id!==editingUserId)){$('userMessage').textContent='Dieser Benutzername ist bereits vergeben.';return}
- if(!editingUserId&&password.length<4){$('userMessage').textContent='Das Passwort muss mindestens 4 Zeichen haben.';return}
- if(editingUserId){
-  const user=users.find(u=>u.id===editingUserId);if(!user)return;
-  user.username=username;user.role=role;if(password)user.passwordHash=await hash(password);
-  if(user.id===current.id){current=user;$('currentUser').textContent=current.username+' · Administrator'}
- }else users.push({id:uid(),username,passwordHash:await hash(password),role});
- write(KEYS.users,users);resetUserForm();renderUsers();toast('Benutzer gespeichert.');
+  event.preventDefault();if(current?.role!=='admin')return;
+  const username=$('newUsername').value.trim(),password=$('newPassword').value,role=$('newRole').value;
+  if(!username){$('userMessage').textContent='Bitte einen Benutzernamen eingeben.';return}
+  if(users.some(u=>u.username.toLowerCase()===username.toLowerCase()&&u.id!==editingUserId)){$('userMessage').textContent='Dieser Benutzername ist bereits vergeben.';return}
+  if(!editingUserId&&password.length<4){$('userMessage').textContent='Das Passwort muss mindestens 4 Zeichen haben.';return}
+  if(editingUserId){
+   const user=users.find(u=>u.id===editingUserId);if(!user)return;
+   user.username=username;user.role=role;if(password)user.passwordHash=await hash(password);if(user.id===current.id){current=user;$('currentUser').textContent=current.username+' · Administrator'}
+  }else users.push({id:uid(),username,passwordHash:await hash(password),role,accountLocked:false});
+  write(KEYS.users,users);resetUserForm();renderUsers();toast('Benutzer gespeichert.');
 });
 function renderLogs(){
- logs=read(KEYS.logs,[]);const host=$('logs');host.replaceChildren();
- if(!logs.length){host.textContent='Noch keine Anmeldungen gespeichert.';host.className='muted';return}
- host.className='';
- const table=document.createElement('table');const thead=document.createElement('thead');const hr=document.createElement('tr');
- ['Datum & Uhrzeit','Benutzername','Ergebnis'].forEach(t=>{const th=document.createElement('th');th.textContent=t;hr.append(th)});thead.append(hr);
- const body=document.createElement('tbody');
- logs.forEach(entry=>{const tr=document.createElement('tr');[entry.time,entry.username,entry.success?'Erfolgreich':'Fehlgeschlagen'].forEach((value,index)=>{const td=document.createElement('td');td.textContent=value;if(index===2&&!entry.success)td.className='dangerText';tr.append(td)});body.append(tr)});
- table.append(thead,body);host.append(table);
+  logs=read(KEYS.logs,[]);const host=$('logs');host.replaceChildren();
+  if(!logs.length){host.textContent='Noch keine Anmeldungen gespeichert.';host.className='muted';return}
+  host.className='';
+  const table=document.createElement('table');const thead=document.createElement('thead');const hr=document.createElement('tr');
+  ['Datum & Uhrzeit','Benutzername','Ergebnis'].forEach(t=>{const th=document.createElement('th');th.textContent=t;hr.append(th)});thead.append(hr);
+  const body=document.createElement('tbody');
+  logs.forEach(entry=>{const tr=document.createElement('tr');[entry.time,entry.username,entry.success?'Erfolgreich':'Fehlgeschlagen'].forEach((value,index)=>{const td=document.createElement('td');td.textContent=value;if(index===2&&!entry.success)td.classList.add('dangerText');tr.append(td)});body.append(tr)});
+  table.append(thead,body);host.append(table);
 }
 $('clearLogsBtn').addEventListener('click',()=>{if(confirm('Den Anmeldeverlauf löschen?')){logs=[];write(KEYS.logs,logs);renderLogs()}});
 
 function persistGroups(){write(KEYS.groups,groups);renderGroups()}
 function initials(name){return name.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join('').toUpperCase()}
 function openGroupModal(group=null){
- editingGroupId=group?group.id:null;$('groupModalTitle').textContent=group?'Gruppe umbenennen':'Neue Gruppe erstellen';
- $('groupModalDescription').textContent=group?'Ändere den Namen deiner Gruppe.':'Gib deiner Gruppe einen Namen.';
- $('saveGroup').textContent=group?'Speichern':'Erstellen';$('groupName').value=group?group.name:'';
- $('groupModalBackdrop').classList.remove('hidden');$('groupName').focus();
+  editingGroupId=group?group.id:null;$('groupModalTitle').textContent=group?'Gruppe umbenennen':'Neue Gruppe erstellen';
+  $('groupModalDescription').textContent=group?'Ändere den Namen deiner Gruppe.':'Gib deiner Gruppe einen Namen.';
+  $('saveGroup').textContent=group?'Speichern':'Erstellen';$('groupName').value=group?group.name:'';
+  $('groupModalBackdrop').classList.remove('hidden');$('groupName').focus();
 }
 function closeGroupModal(){$('groupModalBackdrop').classList.add('hidden');editingGroupId=null}
 $('newGroupBtn').addEventListener('click',()=>openGroupModal());
 $('cancelGroup').addEventListener('click',closeGroupModal);
 $('groupModalBackdrop').addEventListener('click',event=>{if(event.target===$('groupModalBackdrop'))closeGroupModal()});
 $('groupForm').addEventListener('submit',event=>{
- event.preventDefault();const name=$('groupName').value.trim();if(!name)return;
- if(editingGroupId){const group=groups.find(g=>g.id===editingGroupId);if(group)group.name=name}
- else groups.unshift({id:uid(),name,members:[]});
- closeGroupModal();persistGroups();toast('Gruppe gespeichert.');
+  event.preventDefault();const name=$('groupName').value.trim();if(!name)return;
+  if(editingGroupId){const group=groups.find(g=>g.id===editingGroupId);if(group)group.name=name}
+  else groups.unshift({id:uid(),name,members:[]});
+  closeGroupModal();persistGroups();toast('Gruppe gespeichert.');
 });
 function renderGroups(){
- $('groupCount').textContent=groups.length;
- $('memberCount').textContent=groups.reduce((sum,g)=>sum+g.members.length,0);
- const largest=groups.reduce((best,g)=>!best||g.members.length>best.members.length?g:best,null);
- $('largestGroup').textContent=largest?largest.members.length:'–';
- const query=$('searchGroups').value.trim().toLocaleLowerCase('de');
- const visible=groups.filter(g=>g.name.toLocaleLowerCase('de').includes(query)||g.members.some(m=>m.name.toLocaleLowerCase('de').includes(query)));
- const host=$('groups');host.replaceChildren();
- if(!visible.length){const empty=document.createElement('div');empty.className='empty';empty.textContent=groups.length?'Keine Treffer gefunden.':'Noch keine Gruppen vorhanden.';host.append(empty);return}
- visible.forEach(group=>{
-  const card=document.createElement('article');card.className='group-card';
-  const head=document.createElement('div');head.className='group-head';
-  const titleWrap=document.createElement('div');const title=document.createElement('div');title.className='group-title';title.textContent=group.name;
-  const meta=document.createElement('div');meta.className='group-meta';meta.textContent=`${group.members.length} ${group.members.length===1?'Mitglied':'Mitglieder'}`;titleWrap.append(title,meta);
-  const actions=document.createElement('div');actions.className='group-actions';
-  const rename=document.createElement('button');rename.type='button';rename.className='secondary';rename.textContent='Umbenennen';rename.onclick=()=>openGroupModal(group);
-  const remove=document.createElement('button');remove.type='button';remove.className='danger';remove.textContent='Löschen';remove.onclick=()=>{if(confirm(`Gruppe „${group.name}“ löschen?`)){groups=groups.filter(g=>g.id!==group.id);persistGroups()}};
-  actions.append(rename,remove);head.append(titleWrap,actions);
-  const form=document.createElement('form');form.className='member-form';
-  const input=document.createElement('input');input.maxLength=50;input.required=true;input.placeholder='Name hinzufügen …';
-  const add=document.createElement('button');add.type='submit';add.textContent='＋';form.append(input,add);
-  form.addEventListener('submit',event=>{
-   event.preventDefault();const name=input.value.trim();if(!name)return;
-   if(group.members.some(m=>m.name.toLocaleLowerCase('de')===name.toLocaleLowerCase('de'))){toast('Dieses Mitglied ist bereits in der Gruppe.');return}
-   group.members.push({id:uid(),name});persistGroups();toast(`${name} wurde hinzugefügt.`);
+  $('groupCount').textContent=groups.length;
+  $('memberCount').textContent=groups.reduce((sum,g)=>sum+g.members.length,0);
+  const largest=groups.reduce((best,g)=>!best||g.members.length>best.members.length?g:best,null);
+  $('largestGroup').textContent=largest?largest.members.length:'–';
+  const query=$('searchGroups').value.trim().toLocaleLowerCase('de');
+  const visible=groups.filter(g=>g.name.toLocaleLowerCase('de').includes(query)||g.members.some(m=>m.name.toLocaleLowerCase('de').includes(query)));
+  const host=$('groups');host.replaceChildren();
+  if(!visible.length){const empty=document.createElement('div');empty.className='empty';empty.textContent=groups.length?'Keine Treffer gefunden.':'Noch keine Gruppen vorhanden.';host.append(empty);return}
+  visible.forEach(group=>{
+   const card=document.createElement('article');card.className='group-card';
+   const head=document.createElement('div');head.className='group-head';
+   const titleWrap=document.createElement('div');const title=document.createElement('div');title.className='group-title';title.textContent=group.name;
+   const meta=document.createElement('div');meta.className='group-meta';meta.textContent=`${group.members.length} ${group.members.length===1?'Mitglied':'Mitglieder'}`;titleWrap.append(title,meta);
+   const actions=document.createElement('div');actions.className='group-actions';
+   const rename=document.createElement('button');rename.type='button';rename.className='secondary';rename.textContent='Umbenennen';rename.onclick=()=>openGroupModal(group);
+   const remove=document.createElement('button');remove.type='button';remove.className='danger';remove.textContent='Löschen';remove.onclick=()=>{if(confirm(`Gruppe „${group.name}“ löschen?`)){groups=groups.filter(g=>g.id!==group.id);persistGroups()}};
+   actions.append(rename,remove);head.append(titleWrap,actions);
+   const form=document.createElement('form');form.className='member-form';
+   const input=document.createElement('input');input.maxLength=50;input.required=true;input.placeholder='Name hinzufügen …';
+   const add=document.createElement('button');add.type='submit';add.textContent='＋';form.append(input,add);
+   form.addEventListener('submit',event=>{
+    event.preventDefault();const name=input.value.trim();if(!name)return;
+    if(group.members.some(m=>m.name.toLocaleLowerCase('de')===name.toLocaleLowerCase('de'))){toast('Dieses Mitglied ist bereits in der Gruppe.');return}
+    group.members.push({id:uid(),name});persistGroups();toast(`${name} wurde hinzugefügt.`);
+   });
+   const list=document.createElement('ul');list.className='member-list';
+   if(!group.members.length){const li=document.createElement('li');li.className='member';li.textContent='Noch keine Mitglieder.';li.className='member group-meta';list.append(li)}
+   group.members.forEach(member=>{
+    const li=document.createElement('li');li.className='member';const name=document.createElement('span');name.className='member-name';
+    const avatar=document.createElement('span');avatar.className='emoji';avatar.style.display='inline-grid';avatar.style.width='30px';avatar.style.height='30px';avatar.style.fontSize='12px';avatar.style.marginRight='8px';avatar.textContent=initials(member.name);
+    name.append(avatar,document.createTextNode(member.name));
+    const del=document.createElement('button');del.type='button';del.className='remove-btn';del.textContent='Entfernen';del.onclick=()=>{group.members=group.members.filter(m=>m.id!==member.id);persistGroups()};
+    li.append(name,del);list.append(li);
+   });
+   card.append(head,form,list);host.append(card);
   });
-  const list=document.createElement('ul');list.className='member-list';
-  if(!group.members.length){const li=document.createElement('li');li.className='member';li.textContent='Noch keine Mitglieder.';li.className='member group-meta';list.append(li)}
-  group.members.forEach(member=>{
-   const li=document.createElement('li');li.className='member';const name=document.createElement('span');name.className='member-name';
-   const avatar=document.createElement('span');avatar.className='emoji';avatar.style.display='inline-grid';avatar.style.width='30px';avatar.style.height='30px';avatar.style.fontSize='12px';avatar.style.marginRight='8px';avatar.textContent=initials(member.name);
-   name.append(avatar,document.createTextNode(member.name));
-   const del=document.createElement('button');del.type='button';del.className='remove-btn';del.textContent='Entfernen';del.onclick=()=>{group.members=group.members.filter(m=>m.id!==member.id);persistGroups()};
-   li.append(name,del);list.append(li);
-  });
-  card.append(head,form,list);host.append(card);
- });
 }
 $('searchGroups').addEventListener('input',renderGroups);
 $('exportGroups').addEventListener('click',()=>{
- const blob=new Blob([JSON.stringify(groups,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);
- const a=document.createElement('a');a.href=url;a.download='my-app-center-gruppen.json';document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);
+  const blob=new Blob([JSON.stringify(groups,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');a.href=url;a.download='my-app-center-gruppen.json';document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);
 });
 $('importGroups').addEventListener('click',()=>$('groupImportFile').click());
 $('groupImportFile').addEventListener('change',async event=>{
- const file=event.target.files?.[0];if(!file)return;
- try{
-  const data=JSON.parse(await file.text());
-  if(!Array.isArray(data)||!data.every(g=>g&&typeof g.name==='string'&&Array.isArray(g.members)))throw new Error('Format');
-  const imported=data.map(g=>({id:uid(),name:g.name.slice(0,50),members:g.members.filter(m=>m&&typeof m.name==='string').map(m=>({id:uid(),name:m.name.slice(0,50)}))}));
-  if(confirm(`${imported.length} Gruppen importieren? Vorhandene Gruppen bleiben erhalten.`)){groups=[...imported,...groups];persistGroups();toast('Import abgeschlossen.')}
- }catch{toast('Datei konnte nicht importiert werden.')}
- event.target.value='';
+  const file=event.target.files?.[0];if(!file)return;
+  try{
+   const data=JSON.parse(await file.text());
+   if(!Array.isArray(data)||!data.every(g=>g&&typeof g.name==='string'&&Array.isArray(g.members)))throw new Error('Format');
+   const imported=data.map(g=>({id:uid(),name:g.name.slice(0,50),members:g.members.filter(m=>m&&typeof m.name==='string').map(m=>({id:uid(),name:m.name.slice(0,50)}))}));
+   if(confirm(`${imported.length} Gruppen importieren? Vorhandene Gruppen bleiben erhalten.`)){groups=[...imported,...groups];persistGroups();toast('Import abgeschlossen.')}
+  }catch{toast('Datei konnte nicht importiert werden.')}
+  event.target.value='';
 });
 
 async function start(){
- await initUsers();
- apps=read(KEYS.apps,[]);groups=read(KEYS.groups,[]);
- const sessionId=sessionStorage.getItem(KEYS.session);
- current=users.find(u=>u.id===sessionId)||null;
- if(current)showApp();else{sessionStorage.removeItem(KEYS.session);showLogin()}
- if(Number(localStorage.getItem(KEYS.lock)||0)>Date.now())startLockTimer();
+  await initUsers();
+  apps=read(KEYS.apps,[]);groups=read(KEYS.groups,[]);
+  const sessionId=sessionStorage.getItem(KEYS.session);
+  current=users.find(u=>u.id===sessionId)||null;
+  if(current)showApp();else{sessionStorage.removeItem(KEYS.session);showLogin()}
+  if(Number(localStorage.getItem(KEYS.lock)||0)>Date.now())startLockTimer();
 }
 start();
 </script>

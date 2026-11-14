@@ -5,73 +5,59 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Benutzerverwaltung · My App Center</title>
   <style>
-    :root { color-scheme: dark; --bg: #0b1220; --panel: #16233a; --panel2: #1d2c45; --line: #304562; --text: #edf6ff; --muted: #afbdd2; --accent: #60a5fa; --danger: #ef4444; --success: #34d399; }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: linear-gradient(150deg, #0c1322, #070d17); color: var(--text); font: 16px system-ui, -apple-system, Segoe UI, sans-serif; }
-    a { color: inherit; }
-    .wrap { max-width: 1000px; margin: auto; padding: 24px 15px 55px; }
-    .panel { background: rgba(22,35,58,.97); border: 1px solid var(--line); border-radius: 18px; padding: 20px; margin-top: 16px; box-shadow: 0 14px 32px rgba(0,0,0,.2); }
-    h1 { font-size: clamp(26px,6vw,38px); margin: 0; }
-    h2 { font-size: 21px; margin: 0 0 8px; }
-    .muted { color: var(--muted); }
-    .row, .actions, .admin-tabs { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .top { justify-content: space-between; }
-    .user { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; border: 1px solid var(--line); background: var(--panel2); border-radius: 13px; padding: 14px 16px; }
-    .user-meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .user-name { font-weight: 750; }
-    .state { font-size: 13px; color: var(--success); }
-    .state.locked { color: #fca5a5; }
-    button, input { font: inherit; }
-    button { border: 0; border-radius: 10px; padding: 10px 13px; background: var(--accent); color: #071521; font-weight: 700; cursor: pointer; }
-    button.secondary, .admin-tab { background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
-    button.danger { background: var(--danger); color: #fff; }
-    button:disabled { opacity: .5; cursor: not-allowed; }
-    .admin-tabs { border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-top: 20px; }
-    .admin-tab { border-radius: 10px; padding: 10px 14px; cursor: pointer; }
-    .admin-tab.active { background: var(--accent); border-color: var(--accent); color: #071521; }
-    .tab-panel { display: none; }
-    .tab-panel.active { display: block; }
-    label { display: block; color: var(--muted); font-size: 13px; margin: 13px 0 6px; }
-    input { width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--line); background: #0d1728; color: var(--text); }
-    .form { max-width: 440px; }
-    .hidden { display: none !important; }
-    .msg { min-height: 22px; color: #34d399; }
-    .notice { font-size: 13px; line-height: 1.55; color: var(--muted); }
-    .timeout-grid { display: grid; gap: 12px; margin-top: 12px; }
-    .timeout-card { background: rgba(29,44,69,.9); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-    .timeout-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-    .timeout-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .timeout-name { font-weight: 800; font-size: 1.05rem; }
-    .status-pill { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; border: 1px solid rgba(96,165,250,.4); background: rgba(96,165,250,.12); color: var(--accent); }
-    .status-pill.active { border-color: rgba(239,68,68,.55); background: rgba(239,68,68,.12); color: #fca5a5; }
-    .status-pill.safe { border-color: rgba(52,211,153,.4); background: rgba(52,211,153,.12); color: var(--success); }
-    .timeout-meta { color: var(--muted); font-size: 13px; line-height: 1.5; }
-    .timeout-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    .timeout-actions button { padding: 9px 12px; }
-    .duration-form { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
-    .duration-field { width: 140px; }
-    .small { color: var(--muted); font-size: 12px; }
-    @media (max-width:600px) { .user { align-items: stretch; } .user .actions > * { flex: 1; } .timeout-card { flex-direction: column; } .timeout-actions { width: 100%; } .timeout-actions > * { flex: 1; } .duration-form { align-items: stretch; } .duration-field { width: 100%; } }
+    :root { color-scheme: dark; --panel:#16233a; --panel2:#1d2c45; --line:#304562; --text:#edf6ff; --muted:#afbdd2; --accent:#60a5fa; --danger:#ef4444; --success:#34d399; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:linear-gradient(150deg,#0c1322,#070d17); color:var(--text); font:16px system-ui,-apple-system,Segoe UI,sans-serif; }
+    a { color:inherit; }
+    .wrap { max-width:1000px; margin:auto; padding:24px 15px 55px; }
+    .panel { background:rgba(22,35,58,.97); border:1px solid var(--line); border-radius:18px; padding:20px; margin-top:16px; box-shadow:0 14px 32px rgba(0,0,0,.2); }
+    h1 { font-size:clamp(26px,6vw,38px); margin:0; }
+    h2 { font-size:21px; margin:0 0 8px; }
+    .muted,.notice { color:var(--muted); }
+    .notice { font-size:13px; line-height:1.55; }
+    .row,.actions,.admin-tabs { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .top { justify-content:space-between; }
+    .user,.timeout-card { display:flex; justify-content:space-between; align-items:center; gap:14px; flex-wrap:wrap; border:1px solid var(--line); background:var(--panel2); border-radius:13px; padding:14px; margin-top:10px; }
+    .user-meta,.timeout-main { display:flex; flex-direction:column; gap:6px; min-width:0; }
+    .user-name,.timeout-name { font-weight:750; }
+    .state { font-size:13px; color:var(--success); }
+    .state.locked { color:#fca5a5; }
+    button,input,select { font:inherit; }
+    button { border:0; border-radius:10px; padding:10px 13px; background:var(--accent); color:#071521; font-weight:700; cursor:pointer; }
+    button.secondary,.admin-tab { background:var(--panel2); color:var(--text); border:1px solid var(--line); }
+    button.danger { background:var(--danger); color:#fff; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .admin-tabs { border-bottom:1px solid var(--line); padding-bottom:10px; margin-top:20px; }
+    .admin-tab { border-radius:10px; padding:10px 14px; cursor:pointer; }
+    .admin-tab.active { background:var(--accent); border-color:var(--accent); color:#071521; }
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+    label { display:block; color:var(--muted); font-size:13px; margin:8px 0 5px; }
+    input,select { width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--line); background:#0d1728; color:var(--text); }
+    .form { max-width:440px; }
+    .hidden { display:none!important; }
+    .msg { min-height:22px; color:var(--success); }
+    .timeout-grid { display:grid; gap:12px; margin-top:12px; }
+    .timeout-card { background:rgba(29,44,69,.9); border-radius:16px; padding:16px; }
+    .timeout-header { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .status-pill { display:inline-block; border-radius:999px; padding:4px 10px; font-size:12px; font-weight:700; border:1px solid rgba(52,211,153,.4); background:rgba(52,211,153,.12); color:var(--success); }
+    .status-pill.active { border-color:rgba(239,68,68,.55); background:rgba(239,68,68,.12); color:#fca5a5; }
+    .status-pill.manual { border-color:rgba(96,165,250,.4); background:rgba(96,165,250,.12); color:#93c5fd; }
+    .timeout-meta { color:var(--muted); font-size:13px; line-height:1.5; }
+    .timeout-controls { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; margin-top:8px; }
+    .timeout-select-wrap { width:180px; }
+    .timeout-actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    @media(max-width:600px) { .user,.timeout-card { align-items:stretch; flex-direction:column; } .user .actions>* { flex:1; } .timeout-controls>* { flex:1 1 100%; } .timeout-select-wrap { width:100%; } .timeout-actions>* { flex:1; } }
   </style>
 </head>
 <body>
   <main class="wrap">
     <header class="row top">
-      <div>
-        <h1>Benutzerverwaltung</h1>
-        <p class="muted">Benutzerkonten und Login-Timeouts verwalten.</p>
-      </div>
-      <div class="actions">
-        <a href="./" style="color:var(--text);text-decoration:none;">Zurück zur App</a>
-        <button class="secondary" id="logout" type="button">Abmelden</button>
-      </div>
+      <div><h1>Benutzerverwaltung</h1><p class="muted">Benutzerkonten und Login-Timeouts verwalten.</p></div>
+      <div class="actions"><a href="./" style="text-decoration:none;">Zurück zur App</a><button class="secondary" id="logout" type="button">Abmelden</button></div>
     </header>
 
-    <section id="denied" class="panel hidden">
-      <h2>Kein Zugriff</h2>
-      <p class="muted">Melde dich in der App mit einem Administratorkonto an und öffne diese Seite anschließend erneut.</p>
-      <a href="./" style="color:var(--accent);">Zur App</a>
-    </section>
+    <section id="denied" class="panel hidden"><h2>Kein Zugriff</h2><p class="muted">Melde dich in der App mit einem Administratorkonto an und öffne diese Seite anschließend erneut.</p><a href="./">Zur App</a></section>
 
     <section id="admin" class="hidden">
       <nav class="admin-tabs" aria-label="Admin-Bereiche">
@@ -80,366 +66,161 @@
       </nav>
 
       <section id="accountsPanel" class="tab-panel active">
-        <div class="panel">
-          <h2>Benutzerkonten</h2>
-          <p class="notice">Hier kannst du Konten sperren oder entsperren und Passwörter zurücksetzen.</p>
-          <div id="users"></div>
-          <p id="message" class="msg" role="status"></p>
-        </div>
-
-        <div class="panel">
-          <h2>Passwort zurücksetzen</h2>
-          <p class="muted" id="targetLabel">Wähle zuerst einen Benutzer aus der Liste.</p>
-          <form id="resetForm" class="form hidden">
-            <label for="newPassword">Neues Passwort</label>
-            <input id="newPassword" type="password" minlength="4" autocomplete="new-password" required>
-            <div class="actions">
-              <button type="submit">Passwort speichern</button>
-              <button type="button" class="secondary" id="cancel">Abbrechen</button>
-            </div>
-          </form>
+        <div class="panel"><h2>Benutzerkonten</h2><p class="notice">Konten sperren oder entsperren und Passwörter zurücksetzen.</p><div id="users"></div><p id="message" class="msg" role="status"></p></div>
+        <div class="panel"><h2>Passwort zurücksetzen</h2><p class="muted" id="targetLabel">Wähle zuerst einen Benutzer aus der Liste.</p>
+          <form id="resetForm" class="form hidden"><label for="newPassword">Neues Passwort</label><input id="newPassword" type="password" minlength="4" autocomplete="new-password" required><div class="actions"><button type="submit">Passwort speichern</button><button type="button" class="secondary" id="cancel">Abbrechen</button></div></form>
         </div>
       </section>
 
       <section id="timeoutsPanel" class="tab-panel">
-        <div class="panel">
-          <h2>Login-Timeouts</h2>
-          <p class="notice">Jeder Benutzer hat einen eigenen Timeout. Du kannst die verbleibende Sperrzeit nach Belieben verkürzen, verlängern oder sofort aufheben. Zusätzlich kannst du für einen Benutzer einen neuen festen Timeout in Sekunden festlegen.</p>
-          <div id="timeouts" class="timeout-grid"></div>
-        </div>
+        <div class="panel"><h2>Login-Timeouts</h2><p class="notice">Wähle für jeden normalen Benutzer 30 Sekunden, 1, 2, 5 oder 15 Minuten. Mit −10s und +10s kannst du den aktiven Timeout zusätzlich verkürzen oder verlängern; „Entsperren“ hebt ihn sofort auf.</p><div id="timeouts" class="timeout-grid"></div></div>
       </section>
     </section>
   </main>
 
   <script>
     'use strict';
+    const USERS_KEY='mac-admin-users-v2';
+    const SESSION_KEY='mac-session-v2';
+    const LOGIN_SETTINGS={maxFailedAttempts:3,defaultTimeoutSeconds:60};
+    const TIMEOUT_PRESETS=[{seconds:30,label:'30 Sekunden'},{seconds:60,label:'1 Minute'},{seconds:120,label:'2 Minuten'},{seconds:300,label:'5 Minuten'},{seconds:900,label:'15 Minuten'}];
+    const $=(id)=>document.getElementById(id);
+    let users=[],current=null,targetId=null,timeoutRefresh=null;
 
-    const USERS_KEY = 'mac-admin-users-v2';
-    const SESSION_KEY = 'mac-session-v2';
-    const LOGIN_SETTINGS = { maxFailedAttempts: 3, defaultTimeoutSeconds: 60 };
-    const $ = (id) => document.getElementById(id);
-    let users = [], current = null, targetId = null, timeoutRefresh = null;
+    function readUsers(){try{const value=JSON.parse(localStorage.getItem(USERS_KEY)||'[]');return Array.isArray(value)?value:[]}catch{return []}}
+    function save(){localStorage.setItem(USERS_KEY,JSON.stringify(users))}
+    async function hash(text){const bytes=new TextEncoder().encode(text);const digest=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+    function getRemainingSeconds(user){if(!user||!user.timeoutUntil||Number(user.timeoutUntil)<=Date.now())return 0;return Math.max(0,Math.ceil((Number(user.timeoutUntil)-Date.now())/1000))}
+    function showMessage(text,error=false){$('message').textContent=text;$('message').style.color=error?'#fca5a5':'#34d399'}
+    function closeReset(){targetId=null;$('resetForm').reset();$('resetForm').classList.add('hidden');$('targetLabel').textContent='Wähle zuerst einen Benutzer aus der Liste.'}
 
-    function readUsers() {
-      try {
-        const value = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-        return Array.isArray(value) ? value : [];
-      } catch {
-        return [];
-      }
-    }
-
-    function save() {
-      localStorage.setItem(USERS_KEY, JSON.stringify(users));
-    }
-
-    async function hash(text) {
-      const bytes = new TextEncoder().encode(text);
-      const digest = await crypto.subtle.digest('SHA-256', bytes);
-      return [...new Uint8Array(digest)].map((x) => x.toString(16).padStart(2, '0')).join('');
-    }
-
-    function getRemainingSeconds(user) {
-      if (!user || !user.timeoutUntil || Number(user.timeoutUntil) <= Date.now()) return 0;
-      return Math.max(0, Math.ceil((Number(user.timeoutUntil) - Date.now()) / 1000));
-    }
-
-    function showMessage(text, error = false) {
-      $('message').textContent = text;
-      $('message').style.color = error ? '#fca5a5' : '#34d399';
-    }
-
-    function closeReset() {
-      targetId = null;
-      $('resetForm').reset();
-      $('resetForm').classList.add('hidden');
-      $('targetLabel').textContent = 'Wähle zuerst einen Benutzer aus der Liste.';
-    }
-
-    function normalizeUser(user) {
-      const normalized = {
-        ...user,
-        accountLocked: !!user.accountLocked,
-        failedAttempts: Number(user.failedAttempts || 0),
-        timeoutUntil: Number(user.timeoutUntil || 0),
-        lockedPasswordHash: user.lockedPasswordHash || null
-      };
-      if (normalized.accountLocked && normalized.timeoutUntil && normalized.timeoutUntil <= Date.now()) {
-        normalized.accountLocked = false;
-        normalized.timeoutUntil = 0;
-        normalized.failedAttempts = 0;
-      }
+    function normalizeUser(user){
+      const normalized={...user,accountLocked:!!user.accountLocked,failedAttempts:Number(user.failedAttempts||0),timeoutUntil:Number(user.timeoutUntil||0),lockedPasswordHash:user.lockedPasswordHash||null};
+      // Automatic timeout locks expire; manually locked accounts have no timeoutUntil.
+      if(normalized.accountLocked&&normalized.timeoutUntil&&normalized.timeoutUntil<=Date.now()&&!normalized.lockedPasswordHash){normalized.accountLocked=false;normalized.timeoutUntil=0;normalized.failedAttempts=0}
       return normalized;
     }
 
-    function setTab(panelId) {
-      document.querySelectorAll('.admin-tab').forEach((button) => {
-        button.classList.toggle('active', button.dataset.tab === panelId);
-      });
-      document.querySelectorAll('.tab-panel').forEach((panel) => {
-        panel.classList.toggle('active', panel.id === panelId);
-      });
-      if (panelId === 'timeoutsPanel') renderTimeouts();
+    function setTab(panelId){
+      document.querySelectorAll('.admin-tab').forEach(button=>button.classList.toggle('active',button.dataset.tab===panelId));
+      document.querySelectorAll('.tab-panel').forEach(panel=>panel.classList.toggle('active',panel.id===panelId));
+      if(panelId==='timeoutsPanel')renderTimeouts();
     }
+    document.querySelectorAll('.admin-tab').forEach(button=>button.addEventListener('click',()=>setTab(button.dataset.tab)));
 
-    document.querySelectorAll('.admin-tab').forEach((button) => {
-      button.addEventListener('click', () => setTab(button.dataset.tab));
-    });
-
-    function renderAccounts() {
-      const host = $('users');
-      host.replaceChildren();
-
-      users.forEach((user) => {
-        const row = document.createElement('article');
-        row.className = 'user';
-
-        const info = document.createElement('div');
-        info.className = 'user-meta';
-
-        const name = document.createElement('div');
-        name.className = 'user-name';
-        name.textContent = user.username;
-
-        const state = document.createElement('div');
-        const locked = !!user.accountLocked || getRemainingSeconds(user) > 0;
-        state.className = 'state' + (locked ? ' locked' : '');
-        state.textContent = `${user.role === 'admin' ? 'Administrator' : 'Benutzer'} · ${locked ? 'Gesperrt' : 'Aktiv'} · Fehlversuche: ${Number(user.failedAttempts || 0)}/${LOGIN_SETTINGS.maxFailedAttempts}`;
-
-        info.append(name, state);
-
-        const actions = document.createElement('div');
-        actions.className = 'actions';
-
-        const reset = document.createElement('button');
-        reset.type = 'button';
-        reset.className = 'secondary';
-        reset.textContent = 'Passwort zurücksetzen';
-        reset.onclick = () => {
-          targetId = user.id;
-          $('targetLabel').textContent = `Neues Passwort für ${user.username} festlegen.`;
-          $('resetForm').classList.remove('hidden');
-          $('newPassword').focus();
-        };
-
-        const lock = document.createElement('button');
-        lock.type = 'button';
-        lock.className = user.accountLocked ? 'secondary' : 'danger';
-        lock.textContent = user.accountLocked ? 'Entsperren' : 'Sperren';
-        lock.disabled = user.id === current.id;
-        lock.onclick = () => toggleManualLock(user);
-
-        actions.append(reset, lock);
-        row.append(info, actions);
-        host.append(row);
+    function renderAccounts(){
+      const host=$('users');host.replaceChildren();
+      users.forEach(user=>{
+        const row=document.createElement('article');row.className='user';
+        const info=document.createElement('div');info.className='user-meta';
+        const name=document.createElement('div');name.className='user-name';name.textContent=user.username;
+        const state=document.createElement('div');
+        const timedLocked=getRemainingSeconds(user)>0;
+        const locked=!!user.lockedPasswordHash||timedLocked;
+        state.className='state'+(locked?' locked':'');
+        state.textContent=`${user.role==='admin'?'Administrator':'Benutzer'} · ${user.lockedPasswordHash?'Manuell gesperrt':timedLocked?'Timeout aktiv':'Aktiv'} · Fehlversuche: ${Number(user.failedAttempts||0)}/${LOGIN_SETTINGS.maxFailedAttempts}`;
+        info.append(name,state);
+        const actions=document.createElement('div');actions.className='actions';
+        const reset=document.createElement('button');reset.type='button';reset.className='secondary';reset.textContent='Passwort zurücksetzen';
+        reset.onclick=()=>{targetId=user.id;$('targetLabel').textContent=`Neues Passwort für ${user.username} festlegen.`;$('resetForm').classList.remove('hidden');$('newPassword').focus()};
+        const lock=document.createElement('button');lock.type='button';lock.className=user.lockedPasswordHash?'secondary':'danger';
+        lock.textContent=user.lockedPasswordHash?'Entsperren':'Sperren';lock.disabled=user.id===current.id;lock.onclick=()=>toggleManualLock(user);
+        actions.append(reset,lock);row.append(info,actions);host.append(row);
       });
     }
 
-    function setCustomTimeout(user, seconds) {
-      const safeSeconds = Number.isFinite(seconds) ? Math.max(1, Math.round(seconds)) : LOGIN_SETTINGS.defaultTimeoutSeconds;
-      user.timeoutUntil = Date.now() + safeSeconds * 1000;
-      user.failedAttempts = Math.max(Number(user.failedAttempts || 0), LOGIN_SETTINGS.maxFailedAttempts);
-      user.accountLocked = true;
-      save();
-      renderTimeouts();
-      renderAccounts();
-      showMessage(`Timeout für ${user.username} auf ${safeSeconds} Sekunden gesetzt.`);
-    }
+    function renderTimeouts(){
+      const host=$('timeouts');host.replaceChildren();
+      const regularUsers=users.filter(user=>user.role!=='admin');
+      if(!regularUsers.length){const empty=document.createElement('div');empty.className='muted';empty.textContent='Es sind noch keine normalen Benutzerkonten vorhanden.';host.append(empty);return}
+      regularUsers.forEach(user=>{
+        const card=document.createElement('article');card.className='timeout-card';
+        const main=document.createElement('div');main.className='timeout-main';
+        const header=document.createElement('div');header.className='timeout-header';
+        const name=document.createElement('div');name.className='timeout-name';name.textContent=user.username;
+        const status=document.createElement('span');const remaining=getRemainingSeconds(user);
+        if(remaining>0){status.className='status-pill active';status.textContent=`Gesperrt · ${remaining}s`}
+        else if(user.lockedPasswordHash){status.className='status-pill manual';status.textContent='Manuell gesperrt'}
+        else{status.className='status-pill safe';status.textContent='Nicht gesperrt'}
+        header.append(name,status);
+        const meta=document.createElement('div');meta.className='timeout-meta';
+        meta.textContent=`Fehlversuche: ${Number(user.failedAttempts||0)} / ${LOGIN_SETTINGS.maxFailedAttempts} · Verbleibende Sperrzeit: ${remaining} Sek.`;
 
-    function renderTimeouts() {
-      const host = $('timeouts');
-      host.replaceChildren();
-      const normalUsers = users.filter((user) => user.role !== 'admin');
+        const durationForm=document.createElement('form');durationForm.className='timeout-controls';
+        const selectWrap=document.createElement('div');selectWrap.className='timeout-select-wrap';
+        const label=document.createElement('label');label.htmlFor=`timeout-preset-${user.id}`;label.textContent='Timeout-Dauer';
+        const select=document.createElement('select');select.id=`timeout-preset-${user.id}`;select.setAttribute('aria-label',`Timeout-Dauer für ${user.username}`);
+        TIMEOUT_PRESETS.forEach(preset=>{const option=document.createElement('option');option.value=String(preset.seconds);option.textContent=preset.label;select.append(option)});
+        select.value=String(TIMEOUT_PRESETS.find(preset=>preset.seconds>=remaining)?.seconds||LOGIN_SETTINGS.defaultTimeoutSeconds);
+        selectWrap.append(label,select);
+        const setButton=document.createElement('button');setButton.type='submit';setButton.textContent='Timeout setzen';
+        durationForm.append(selectWrap,setButton);
+        durationForm.addEventListener('submit',event=>{event.preventDefault();setTimeoutDuration(user,Number(select.value))});
 
-      if (!normalUsers.length) {
-        const empty = document.createElement('div');
-        empty.className = 'muted';
-        empty.textContent = 'Es sind noch keine normalen Benutzerkonten vorhanden.';
-        host.append(empty);
-        return;
-      }
-
-      normalUsers.forEach((user) => {
-        const card = document.createElement('article');
-        card.className = 'timeout-card';
-
-        const main = document.createElement('div');
-        main.className = 'timeout-main';
-
-        const header = document.createElement('div');
-        header.className = 'timeout-header';
-
-        const name = document.createElement('div');
-        name.className = 'timeout-name';
-        name.textContent = user.username;
-
-        const status = document.createElement('span');
-        const remaining = getRemainingSeconds(user);
-        if (remaining > 0) {
-          status.className = 'status-pill active';
-          status.textContent = `Gesperrt · ${remaining}s`;
-        } else if (user.accountLocked) {
-          status.className = 'status-pill';
-          status.textContent = 'Manuell gesperrt';
-        } else {
-          status.className = 'status-pill safe';
-          status.textContent = 'Nicht gesperrt';
-        }
-
-        header.append(name, status);
-
-        const meta = document.createElement('div');
-        meta.className = 'timeout-meta';
-        meta.innerHTML = `Fehlversuche: ${Number(user.failedAttempts || 0)} / ${LOGIN_SETTINGS.maxFailedAttempts}<br>Verbleibende Sperrzeit: ${remaining > 0 ? `${remaining} Sekunden` : '0 Sekunden'}`;
-
-        const durationForm = document.createElement('form');
-        durationForm.className = 'duration-form';
-
-        const durationInput = document.createElement('input');
-        durationInput.className = 'duration-field';
-        durationInput.type = 'number';
-        durationInput.min = '1';
-        durationInput.max = '86400';
-        durationInput.step = '1';
-        durationInput.value = String(Math.max(1, Math.ceil((remaining > 0 ? remaining : LOGIN_SETTINGS.defaultTimeoutSeconds))));
-
-        const setBtn = document.createElement('button');
-        setBtn.type = 'submit';
-        setBtn.className = 'secondary';
-        setBtn.textContent = 'Festlegen';
-
-        durationForm.append(durationInput, setBtn);
-        durationForm.addEventListener('submit', (event) => {
-          event.preventDefault();
-          const seconds = Number(durationInput.value);
-          if (!Number.isFinite(seconds) || seconds < 1) {
-            showMessage('Bitte gib eine gültige Zahl in Sekunden ein.', true);
-            return;
-          }
-          setCustomTimeout(user, seconds);
-        });
-
-        const actions = document.createElement('div');
-        actions.className = 'timeout-actions';
-
-        const shorten = document.createElement('button');
-        shorten.type = 'button';
-        shorten.className = 'secondary';
-        shorten.textContent = '−10s';
-        shorten.disabled = remaining === 0 && !user.accountLocked;
-        shorten.onclick = () => changeTimeout(user, -10000);
-
-        const extend = document.createElement('button');
-        extend.type = 'button';
-        extend.className = 'secondary';
-        extend.textContent = '+10s';
-        extend.onclick = () => changeTimeout(user, 10000);
-
-        const clear = document.createElement('button');
-        clear.type = 'button';
-        clear.className = 'secondary';
-        clear.textContent = 'Entsperren';
-        clear.disabled = remaining === 0 && !user.accountLocked;
-        clear.onclick = () => clearTimeoutForUser(user);
-
-        actions.append(shorten, extend, clear);
-        main.append(header, meta, durationForm);
-        card.append(main, actions);
-        host.append(card);
+        const actions=document.createElement('div');actions.className='timeout-actions';
+        const shorten=document.createElement('button');shorten.type='button';shorten.className='secondary';shorten.textContent='−10s';shorten.disabled=remaining===0;shorten.onclick=()=>changeTimeout(user,-10000);
+        const extend=document.createElement('button');extend.type='button';extend.className='secondary';extend.textContent='+10s';extend.onclick=()=>changeTimeout(user,10000);
+        const clear=document.createElement('button');clear.type='button';clear.className='secondary';clear.textContent='Entsperren';clear.disabled=remaining===0&&!user.lockedPasswordHash;clear.onclick=()=>clearTimeoutForUser(user);
+        actions.append(shorten,extend,clear);
+        main.append(header,meta,durationForm);card.append(main,actions);host.append(card);
       });
     }
 
-    function changeTimeout(user, deltaMs) {
-      const now = Date.now();
-      const currentUntil = Number(user.timeoutUntil) > now ? Number(user.timeoutUntil) : now;
-      const nextUntil = Math.max(now, currentUntil + deltaMs);
-      user.timeoutUntil = nextUntil > now ? nextUntil : 0;
-      if (!user.lockedPasswordHash) user.accountLocked = false;
-      if (!user.timeoutUntil) user.failedAttempts = 0;
-      save();
-      renderTimeouts();
-      renderAccounts();
+    function setTimeoutDuration(user,seconds){
+      user.timeoutUntil=Date.now()+seconds*1000;
+      user.failedAttempts=Math.max(Number(user.failedAttempts||0),LOGIN_SETTINGS.maxFailedAttempts);
+      if(!user.lockedPasswordHash)user.accountLocked=true;
+      save();renderTimeouts();renderAccounts();showMessage(`Timeout für ${user.username} auf ${TIMEOUT_PRESETS.find(item=>item.seconds===seconds)?.label||`${seconds} Sekunden`} gesetzt.`);
     }
 
-    function clearTimeoutForUser(user) {
-      user.timeoutUntil = 0;
-      user.failedAttempts = 0;
-      if (!user.lockedPasswordHash) user.accountLocked = false;
-      save();
-      renderTimeouts();
-      renderAccounts();
-      showMessage(`Timeout für ${user.username} wurde aufgehoben.`);
+    function changeTimeout(user,deltaMs){
+      const now=Date.now();
+      const currentUntil=Number(user.timeoutUntil)>now?Number(user.timeoutUntil):now;
+      const nextUntil=Math.max(now,currentUntil+deltaMs);
+      user.timeoutUntil=nextUntil>now?nextUntil:0;
+      if(!user.lockedPasswordHash)user.accountLocked=!!user.timeoutUntil;
+      if(!user.timeoutUntil)user.failedAttempts=0;
+      save();renderTimeouts();renderAccounts();
     }
 
-    function toggleManualLock(user) {
-      if (user.id === current.id) return;
-      if (user.accountLocked) {
-        user.accountLocked = false;
-        if (user.lockedPasswordHash) {
-          user.passwordHash = user.lockedPasswordHash;
-          delete user.lockedPasswordHash;
-        }
+    function clearTimeoutForUser(user){
+      user.timeoutUntil=0;user.failedAttempts=0;
+      if(!user.lockedPasswordHash)user.accountLocked=false;
+      save();renderTimeouts();renderAccounts();showMessage(`Timeout für ${user.username} wurde aufgehoben.`);
+    }
+
+    function toggleManualLock(user){
+      if(user.id===current.id)return;
+      if(user.lockedPasswordHash){
+        user.passwordHash=user.lockedPasswordHash;delete user.lockedPasswordHash;user.accountLocked=false;
+        if(user.pendingPasswordHash){user.passwordHash=user.pendingPasswordHash;delete user.pendingPasswordHash}
         showMessage(`${user.username} wurde entsperrt.`);
-      } else {
-        user.lockedPasswordHash = user.passwordHash;
-        user.passwordHash = 'account-locked:' + crypto.randomUUID();
-        user.accountLocked = true;
-        showMessage(`${user.username} wurde gesperrt.`);
+      }else{
+        user.lockedPasswordHash=user.passwordHash;user.passwordHash='account-locked:'+crypto.randomUUID();user.accountLocked=true;user.timeoutUntil=0;
+        showMessage(`${user.username} wurde manuell gesperrt.`);
       }
-      save();
-      renderAccounts();
-      renderTimeouts();
+      save();renderAccounts();renderTimeouts();
     }
 
-    $('resetForm').addEventListener('submit', async (event) => {
-      event.preventDefault();
-      if (current?.role !== 'admin') return;
-
-      const password = $('newPassword').value;
-      if (password.length < 4) {
-        showMessage('Das Passwort muss mindestens 4 Zeichen lang sein.', true);
-        return;
-      }
-
-      const user = users.find((item) => item.id === targetId);
-      if (!user) return;
-
-      const passwordHash = await hash(password);
-      if (user.accountLocked || getRemainingSeconds(user) > 0) {
-        user.pendingPasswordHash = passwordHash;
-      } else {
-        user.passwordHash = passwordHash;
-      }
-
-      save();
-      showMessage(`Das Passwort für ${user.username} wurde zurückgesetzt.`);
-      closeReset();
-      renderAccounts();
+    $('resetForm').addEventListener('submit',async event=>{
+      event.preventDefault();if(current?.role!=='admin')return;
+      const password=$('newPassword').value;
+      if(password.length<4){showMessage('Das Passwort muss mindestens 4 Zeichen lang sein.',true);return}
+      const user=users.find(item=>item.id===targetId);if(!user)return;
+      const passwordHash=await hash(password);
+      if(user.lockedPasswordHash)user.pendingPasswordHash=passwordHash;else user.passwordHash=passwordHash;
+      save();showMessage(`Das Passwort für ${user.username} wurde zurückgesetzt.`);closeReset();renderAccounts();
     });
 
-    $('cancel').addEventListener('click', closeReset);
-    $('logout').addEventListener('click', () => {
-      sessionStorage.removeItem(SESSION_KEY);
-      location.href = './';
-    });
+    $('cancel').addEventListener('click',closeReset);
+    $('logout').addEventListener('click',()=>{sessionStorage.removeItem(SESSION_KEY);location.href='./'});
 
-    users = readUsers().map(normalizeUser);
-    save();
-
-    const sessionId = sessionStorage.getItem(SESSION_KEY);
-    current = users.find((user) => user.id === sessionId) || null;
-
-    if (current?.role === 'admin') {
-      $('admin').classList.remove('hidden');
-      renderAccounts();
-      renderTimeouts();
-      timeoutRefresh = setInterval(() => {
-        if ($('timeoutsPanel').classList.contains('active')) renderTimeouts();
-      }, 1000);
-    } else {
-      $('denied').classList.remove('hidden');
-    }
+    users=readUsers().map(normalizeUser);save();
+    const sessionId=sessionStorage.getItem(SESSION_KEY);current=users.find(user=>user.id===sessionId)||null;
+    if(current?.role==='admin'){
+      $('admin').classList.remove('hidden');renderAccounts();renderTimeouts();
+      timeoutRefresh=setInterval(()=>{if($('timeoutsPanel').classList.contains('active'))renderTimeouts()},1000);
+    }else $('denied').classList.remove('hidden');
   </script>
 </body>
 </html>
-

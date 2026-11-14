@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My App Center</title>
+<style>
+:root{--bg:#0b1220;--panel:#16233a;--panel2:#1d2c45;--line:#304562;--text:#edf6ff;--muted:#afbdd2;--accent:#60a5fa;--danger:#ef4444;--success:#34d399}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:linear-gradient(150deg,#0c1322,#070d17);color:var(--text)}
+.wrap{max-width:1050px;margin:auto;padding:24px 15px 55px}
+.panel{background:rgba(22,35,58,.97);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:16px;box-shadow:0 14px 32px #0003}
+h1{font-size:clamp(27px,7vw,40px);margin:0;letter-spacing:.035em}h2{font-size:21px;margin:0 0 12px}
+.sub,.muted,.hint{color:var(--muted)}.sub{margin:7px 0 18px}.hint{font-size:13px;line-height:1.5}
+.topbar,.row,.actions,.tabs{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.topbar{justify-content:space-between;margin-bottom:10px}.actions{margin-top:14px}
+button,input,select{font:inherit}button{border:0;border-radius:11px;padding:10px 14px;background:var(--accent);color:#071521;font-weight:700;cursor:pointer}
+button.secondary,.tab{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+button.danger{background:var(--danger);color:white}button:disabled{opacity:.5;cursor:not-allowed}
+input,select{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#0d1728;color:var(--text)}
+label{display:block;color:var(--muted);font-size:13px;margin:13px 0 6px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.app-list,.user-list,.groups{display:grid;gap:12px;margin-top:14px}
+.app-item,.user-item,.group-card{border:1px solid var(--line);background:var(--panel2);border-radius:13px;padding:13px}
+.app-item,.user-item{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.app-main{display:flex;align-items:center;gap:12px;min-width:0;flex:1}
+.emoji{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#60a5fa26;font-size:22px;flex-shrink:0}
+.name{font-weight:700;overflow-wrap:anywhere}.url,.group-meta{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.empty{color:var(--muted);padding:22px 8px;text-align:center}
+#loginArea{max-width:480px;margin:8vh auto 0}#appArea{display:none}
+.error{color:#fca5a5;min-height:22px}.countdown{color:#fbbf24;font-weight:800;font-size:23px;text-align:center;margin:10px}
+.tabs{border-bottom:1px solid var(--line);padding-bottom:10px;margin:17px 0 8px}
+.tab{background:transparent;border-color:transparent;color:var(--muted)}.tab.active{background:var(--panel2);color:var(--text);border-color:var(--line)}
+.view{display:none}.view.active{display:block}.pill{font-size:12px;color:var(--success);border:1px solid #34d39966;padding:3px 8px;border-radius:20px}
+table{width:100%;border-collapse:collapse;font-size:14px;margin-top:12px}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}th{color:var(--muted)}
+.dangerText{color:#fca5a5}.toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin:12px 0}
+.toolbar input[type=search]{flex:1 1 220px}.group-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.group-title{font-weight:800;font-size:18px;overflow-wrap:anywhere}.group-actions{display:flex;gap:6px}
+.member-form{display:flex;gap:8px;margin:14px 0 8px}.member-form input{min-width:0}.member-list{list-style:none;padding:0;margin:0}
+.member{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--line);padding:9px 0}
+.member-name{overflow-wrap:anywhere}.remove-btn{background:transparent;color:#fca5a5;padding:6px 8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+.stat-label{font-size:12px;color:var(--muted)}.stat-number{font-size:24px;font-weight:800}
+.modal-backdrop{position:fixed;inset:0;background:#020617aa;display:grid;place-items:center;padding:18px;z-index:5}
+.modal{width:min(440px,100%);background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:22px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}
+.hidden{display:none!important}.notice{color:var(--muted);font-size:12px;line-height:1.5;margin-top:18px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.app-item,.user-item{flex-direction:column;align-items:stretch}.app-main{width:100%}.actions>*{flex:1}.topbar{align-items:flex-start}.stats{gap:7px}.stat{padding:10px}.stat-number{font-size:20px}table{font-size:12px}th,td{padding:7px 5px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<section id="loginArea" class="panel">
+<h1>MY APP CENTER</h1><p class="sub">Melde dich mit deinem Konto an.</p>
+<form id="loginForm">
+<label for="loginUser">Benutzername</label><input id="loginUser" autocomplete="username" required>
+<label for="loginPass">Passwort</label><input id="loginPass" type="password" autocomplete="current-password" required>
+<div class="actions"><button id="loginBtn" type="submit" style="width:100%">Anmelden</button></div>
+</form>
+<p id="loginMessage" class="error" role="status"></p><div id="countdown" class="countdown" aria-live="polite"></div>
+<p class="hint">Nach 3 falschen Anmeldeversuchen wird der Login für 60 Sekunden gesperrt.</p>
+</section>
+
+<section id="appArea">
+<header class="topbar">
+<div><h1>MY APP CENTER</h1><p class="sub">Deine Apps, Gruppen und Verwaltung an einem Ort.</p></div>
+<div class="row"><span id="currentUser" class="muted"></span><button class="secondary" id="logoutBtn">Abmelden</button></div>
+</header>
+<nav class="tabs">
+<button class="tab active" data-view="appsView">Meine Apps</button>
+<button class="tab" data-view="groupsView">Gruppen</button>
+<button class="tab" id="adminTab" data-view="adminView" hidden>Admin-Verwaltung</button>
+</nav>
+
+<section id="appsView" class="view active">
+<div class="panel">
+<div class="row" style="justify-content:space-between"><strong>Meine Apps</strong><span id="count" class="muted">0 Apps</span></div>
+<div id="apps" class="app-list"></div>
+</div>
+<div class="panel" id="appEditor">
+<h2>＋ App hinzufügen / bearbeiten</h2>
+<form id="appForm">
+<div class="grid">
+<div><label for="emoji">Symbol</label><input id="emoji" maxlength="8" value="🌐"></div>
+<div><label for="name">Name der App</label><input id="name" maxlength="50" required placeholder="z. B. YouTube"></div>
+</div>
+<label for="url">Link</label><input id="url" type="url" required placeholder="https://www.beispiel.de">
+<div class="actions"><button type="submit" id="appSaveBtn">App hinzufügen</button><button type="button" class="secondary" id="cancelAppBtn">Abbrechen</button></div>
+</form>
+<div class="actions"><button type="button" class="danger" id="clearAppsBtn">Alle Apps löschen</button></div>
+</div>
+<p class="hint">Benutzer können Apps öffnen. Nur Administratoren können Apps hinzufügen, bearbeiten oder löschen.</p>
+</section>
+
+<section id="groupsView" class="view">
+<div class="panel">
+<div class="row" style="justify-content:space-between"><div><h2>Gruppenverwaltung</h2><p class="muted">Erstelle Gruppen und verwalte ihre Mitglieder.</p></div><button id="newGroupBtn" type="button">＋ Neue Gruppe</button></div>
+<div class="stats">
+<div class="stat"><div class="stat-label">Gruppen</div><div class="stat-number" id="groupCount">0</div></div>
+<div class="stat"><div class="stat-label">Mitglieder insgesamt</div><div class="stat-number" id="memberCount">0</div></div>
+<div class="stat"><div class="stat-label">Größte Gruppe</div><div class="stat-number" id="largestGroup">–</div></div>
+</div>
+<div class="toolbar">
+<input id="searchGroups" type="search" placeholder="🔎 Gruppen oder Mitglieder suchen …">
+<button class="secondary" id="exportGroups" type="button">Exportieren</button>
+<button class="secondary" id="importGroups" type="button">Importieren</button>
+<input id="groupImportFile" type="file" accept="application/json,.json" class="hidden">
+</div>
+<div id="groups" class="groups"></div>
+<p class="notice">Gruppen werden in diesem Browser gespeichert. Sie werden nicht automatisch mit anderen Geräten geteilt.</p>
+</div>
+</section>
+
+<section id="adminView" class="view">
+<div class="panel">
+<h2>Benutzerverwaltung</h2><p class="muted">Neue Konten erstellen und vorhandene Benutzer verwalten.</p>
+<form id="userForm">
+<div class="grid">
+<div><label for="newUsername">Benutzername</label><input id="newUsername" maxlength="30" required placeholder="Neuer Benutzer"></div>
+<div><label for="newPassword">Passwort</label><input id="newPassword" type="password" minlength="4" required placeholder="Mindestens 4 Zeichen"></div>
+</div>
+<label for="newRole">Rolle</label><select id="newRole"><option value="user">Benutzer</option><option value="admin">Administrator</option></select>
+<div class="actions"><button type="submit" id="userSaveBtn">Benutzer erstellen</button><button type="button" class="secondary hidden" id="cancelUserEdit">Abbrechen</button></div>
+<p id="userMessage" class="error"></p>
+</form>
+<div id="users" class="user-list"></div>
+</div>
+<div class="panel">
+<div class="row" style="justify-content:space-between"><h2>Anmeldeverlauf</h2><button class="secondary" id="clearLogsBtn" type="button">Verlauf löschen</button></div>
+<div id="logs"></div>
+</div>
+</section>
+</section>
+</main>
+
+<div id="groupModalBackdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="groupModalTitle">
+<form id="groupForm" class="modal">
+<h2 id="groupModalTitle">Neue Gruppe erstellen</h2><p class="muted" id="groupModalDescription">Gib deiner Gruppe einen Namen.</p>
+<input id="groupName" maxlength="50" required placeholder="z. B. Freunde, Schule oder Team">
+<div class="modal-actions"><button class="secondary" type="button" id="cancelGroup">Abbrechen</button><button type="submit" id="saveGroup">Erstellen</button></div>
+</form>
+</div>
+<script>
+'use strict';
+const KEYS={
+ apps:'my-app-center-v1',
+ groups:'my-app-center-groups-v1',
+ users:'mac-admin-users-v2',
+ logs:'mac-admin-log-v2',
+ failures:'mac-login-failures-v2',
+ lock:'mac-login-lock-v2',
+ session:'mac-session-v2'
+};
+const DEFAULT_ADMIN={username:'Pokemon2',password:'Hallo226'};
+const $=id=>document.getElementById(id);
+let apps=[],groups=[],users=[],logs=[],current=null,editingAppId=null,editingUserId=null,editingGroupId=null,lockTimer=null;
+
+function read(key,fallback){try{const value=JSON.parse(localStorage.getItem(key));return value??fallback}catch{return fallback}}
+function write(key,value){localStorage.setItem(key,JSON.stringify(value))}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,9)}
+async function hash(text){const data=new TextEncoder().encode(text);const digest=await crypto.subtle.digest('SHA-256',data);return [...new Uint8Array(digest)].map(b=>b.toString(16).padStart(2,'0')).join('')}
+function safeUrl(value){try{const u=new URL(value);return ['https:','http:'].includes(u.protocol)?u.href:null}catch{return null}}
+function toast(message){const old=$('toastMessage');if(old)old.remove();const el=document.createElement('div');el.id='toastMessage';el.textContent=message;el.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#111827;color:white;padding:11px 16px;border-radius:10px;z-index:20;max-width:90%;text-align:center';document.body.append(el);setTimeout(()=>el.remove(),2300)}
+
+async function initUsers(){
+ users=read(KEYS.users,[]);
+ if(!Array.isArray(users)||users.length===0){
+  users=[{id:uid(),username:DEFAULT_ADMIN.username,passwordHash:await hash(DEFAULT_ADMIN.password),role:'admin'}];
+  write(KEYS.users,users);
+ }
+}
+function recordLogin(username,success){
+ logs=read(KEYS.logs,[]);
+ logs.unshift({username,success,time:new Date().toLocaleString('de-DE')});
+ logs=logs.slice(0,200);write(KEYS.logs,logs);
+}
+function showLogin(){
+ $('loginArea').style.display='block';$('appArea').style.display='none';
+ $('loginUser').disabled=false;$('loginPass').disabled=false;updateLock();
+}
+function showApp(){
+ $('loginArea').style.display='none';$('appArea').style.display='block';
+ $('currentUser').textContent=current.username+(current.role==='admin'?' · Administrator':' · Benutzer');
+ $('adminTab').hidden=current.role!=='admin';
+ $('appEditor').classList.toggle('hidden',current.role!=='admin');
+ $('clearAppsBtn').classList.toggle('hidden',current.role!=='admin');
+ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view==='appsView'));
+ document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='appsView'));
+ apps=read(KEYS.apps,[]);groups=read(KEYS.groups,[]);
+ renderApps();renderGroups();
+ if(current.role==='admin'){renderUsers();renderLogs()}
+}
+function showView(id){
+ if(id==='adminView'&&current?.role!=='admin')return;
+ document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));
+ document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.view===id));
+ if(id==='adminView'){renderUsers();renderLogs()}
+}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+
+function updateLock(){
+ const until=Number(localStorage.getItem(KEYS.lock)||0);
+ const seconds=Math.max(0,Math.ceil((until-Date.now())/1000));
+ const locked=seconds>0;
+ $('loginBtn').disabled=locked;$('loginUser').disabled=locked;$('loginPass').disabled=locked;
+ $('countdown').textContent=locked?`Gesperrt – noch ${seconds} Sekunden`: '';
+ if(!locked&&until){localStorage.removeItem(KEYS.lock);localStorage.removeItem(KEYS.failures);$('loginMessage').textContent='Du kannst dich jetzt wieder anmelden.'}
+ return locked;
+}
+function startLockTimer(){
+ if(lockTimer)clearInterval(lockTimer);
+ lockTimer=setInterval(()=>{if(!updateLock()){clearInterval(lockTimer);lockTimer=null}},250);
+}
+$('loginForm').addEventListener('submit',async event=>{
+ event.preventDefault();if(updateLock())return;
+ const username=$('loginUser').value.trim(),password=$('loginPass').value;
+ const found=users.find(u=>u.username.toLowerCase()===username.toLowerCase());
+ const valid=!!found&&found.passwordHash===await hash(password);
+ if(!valid){
+  recordLogin(username,false);
+  const fails=Number(localStorage.getItem(KEYS.failures)||0)+1;
+  if(fails>=3){localStorage.setItem(KEYS.failures,'0');localStorage.setItem(KEYS.lock,String(Date.now()+60000));$('loginMessage').textContent='Drei falsche Versuche. Bitte warte eine Minute.';startLockTimer()}
+  else{localStorage.setItem(KEYS.failures,String(fails));$('loginMessage').textContent=`Benutzername oder Passwort falsch. Noch ${3-fails} Versuch(e).`}
+  $('loginPass').value='';return;
+ }
+ localStorage.removeItem(KEYS.failures);localStorage.removeItem(KEYS.lock);
+ recordLogin(username,true);current=found;sessionStorage.setItem(KEYS.session,current.id);
+ $('loginMessage').textContent='';$('loginPass').value='';showApp();
+});
+$('logoutBtn').addEventListener('click',()=>{
+ sessionStorage.removeItem(KEYS.session);current=null;$('loginUser').value='';$('loginPass').value='';showLogin();
+});
+
+function saveApps(){write(KEYS.apps,apps);renderApps()}
+function resetAppForm(){editingAppId=null;$('appForm').reset();$('emoji').value='🌐';$('appSaveBtn').textContent='App hinzufügen';$('cancelAppBtn').classList.add('hidden')}
+function editApp(app){editingAppId=app.id;$('name').value=app.name;$('url').value=app.url;$('emoji').value=app.emoji||'🌐';$('appSaveBtn').textContent='Änderungen speichern';$('cancelAppBtn').classList.remove('hidden');$('name').focus()}
+function renderApps(){
+ $('count').textContent=`${apps.length} ${apps.length===1?'App':'Apps'}`;
+ const host=$('apps');host.replaceChildren();
+ if(!apps.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='Noch keine Apps vorhanden.';host.append(empty);return}
+ apps.forEach(app=>{
+  const item=document.createElement('article');item.className='app-item';
+  const main=document.createElement('div');main.className='app-main';
+  const icon=document.createElement('div');icon.className='emoji';icon.textContent=app.emoji||'🌐';
+  const meta=document.createElement('div');meta.style.minWidth='0';meta.style.flex='1';
+  const name=document.createElement('div');name.className='name';name.textContent=app.name;
+  const url=document.createElement('div');url.className='url';url.textContent=app.url;
+  meta.append(name,url);main.append(icon,meta);
+  const actions=document.createElement('div');actions.className='actions';
+  const open=document.createElement('button');open.type='button';open.textContent='Öffnen';open.onclick=()=>{const target=safeUrl(app.url);if(target)window.open(target,'_blank','noopener')};
+  actions.append(open);
+  if(current.role==='admin'){
+   const edit=document.createElement('button');edit.type='button';edit.className='secondary';edit.textContent='Bearbeiten';edit.onclick=()=>editApp(app);
+   const del=document.createElement('button');del.type='button';del.className='danger';del.textContent='Löschen';del.onclick=()=>{if(confirm(`App „${app.name}“ löschen?`)){apps=apps.filter(x=>x.id!==app.id);saveApps()}};
+   actions.append(edit,del);
+  }
+  item.append(main,actions);host.append(item);
+ });
+}
+$('appForm').addEventListener('submit',event=>{
+ event.preventDefault();if(current?.role!=='admin')return;
+ const name=$('name').value.trim(),url=safeUrl($('url').value.trim()),emoji=$('emoji').value.trim()||'🌐';
+ if(!name||!url){alert('Bitte einen gültigen Namen und Link eingeben.');return}
+ if(editingAppId===null)apps.push({id:uid(),name,url,emoji});
+ else apps=apps.map(a=>a.id===editingAppId?{...a,name,url,emoji}:a);
+ saveApps();resetAppForm();toast('App gespeichert.');
+});
+$('cancelAppBtn').addEventListener('click',resetAppForm);
+$('clearAppsBtn').addEventListener('click',()=>{if(current?.role==='admin'&&confirm('Wirklich alle Apps löschen?')){apps=[];saveApps();resetAppForm()}});
+
+function renderUsers(){
+ const host=$('users');host.replaceChildren();
+ users.forEach(user=>{
+  const row=document.createElement('div');row.className='user-item';
+  const info=document.createElement('div');info.innerHTML='';
+  const title=document.createElement('div');title.className='name';title.textContent=user.username;
+  const role=document.createElement('div');role.className='group-meta';role.textContent=user.role==='admin'?'Administrator':'Benutzer';
+  info.append(title,role);
+  const actions=document.createElement('div');actions.className='actions';
+  const edit=document.createElement('button');edit.className='secondary';edit.type='button';edit.textContent='Bearbeiten';edit.onclick=()=>editUser(user);
+  const roleBtn=document.createElement('button');roleBtn.className='secondary';roleBtn.type='button';roleBtn.textContent=user.role==='admin'?'Zum Benutzer machen':'Zum Admin machen';
+  roleBtn.disabled=user.id===current.id||(user.role==='admin'&&users.filter(x=>x.role==='admin').length===1);
+  roleBtn.onclick=()=>{user.role=user.role==='admin'?'user':'admin';write(KEYS.users,users);renderUsers();toast('Benutzerrolle geändert.')};
+  const del=document.createElement('button');del.className='danger';del.type='button';del.textContent='Löschen';
+  del.disabled=user.id===current.id||(user.role==='admin'&&users.filter(x=>x.role==='admin').length===1);
+  del.onclick=()=>{if(confirm(`Benutzer ${user.username} löschen?`)){users=users.filter(x=>x.id!==user.id);write(KEYS.users,users);renderUsers()}};
+  actions.append(edit,roleBtn,del);row.append(info,actions);host.append(row);
+ });
+}
+function resetUserForm(){
+ editingUserId=null;$('userForm').reset();$('newPassword').required=true;$('newPassword').placeholder='Mindestens 4 Zeichen';
+ $('userSaveBtn').textContent='Benutzer erstellen';$('cancelUserEdit').classList.add('hidden');$('userMessage').textContent='';
+}
+function editUser(user){
+ editingUserId=user.id;$('newUsername').value=user.username;$('newPassword').value='';$('newPassword').required=false;
+ $('newPassword').placeholder='Leer lassen, um Passwort zu behalten';$('newRole').value=user.role;
+ $('userSaveBtn').textContent='Benutzer speichern';$('cancelUserEdit').classList.remove('hidden');
+}
+$('cancelUserEdit').addEventListener('click',resetUserForm);
+$('userForm').addEventListener('submit',async event=>{
+ event.preventDefault();if(current?.role!=='admin')return;
+ const username=$('newUsername').value.trim(),password=$('newPassword').value,role=$('newRole').value;
+ if(!username){$('userMessage').textContent='Bitte einen Benutzernamen eingeben.';return}
+ if(users.some(u=>u.username.toLowerCase()===username.toLowerCase()&&u.id!==editingUserId)){$('userMessage').textContent='Dieser Benutzername ist bereits vergeben.';return}
+ if(!editingUserId&&password.length<4){$('userMessage').textContent='Das Passwort muss mindestens 4 Zeichen haben.';return}
+ if(editingUserId){
+  const user=users.find(u=>u.id===editingUserId);if(!user)return;
+  user.username=username;user.role=role;if(password)user.passwordHash=await hash(password);
+  if(user.id===current.id){current=user;$('currentUser').textContent=current.username+' · Administrator'}
+ }else users.push({id:uid(),username,passwordHash:await hash(password),role});
+ write(KEYS.users,users);resetUserForm();renderUsers();toast('Benutzer gespeichert.');
+});
+function renderLogs(){
+ logs=read(KEYS.logs,[]);const host=$('logs');host.replaceChildren();
+ if(!logs.length){host.textContent='Noch keine Anmeldungen gespeichert.';host.className='muted';return}
+ host.className='';
+ const table=document.createElement('table');const thead=document.createElement('thead');const hr=document.createElement('tr');
+ ['Datum & Uhrzeit','Benutzername','Ergebnis'].forEach(t=>{const th=document.createElement('th');th.textContent=t;hr.append(th)});thead.append(hr);
+ const body=document.createElement('tbody');
+ logs.forEach(entry=>{const tr=document.createElement('tr');[entry.time,entry.username,entry.success?'Erfolgreich':'Fehlgeschlagen'].forEach((value,index)=>{const td=document.createElement('td');td.textContent=value;if(index===2&&!entry.success)td.className='dangerText';tr.append(td)});body.append(tr)});
+ table.append(thead,body);host.append(table);
+}
+$('clearLogsBtn').addEventListener('click',()=>{if(confirm('Den Anmeldeverlauf löschen?')){logs=[];write(KEYS.logs,logs);renderLogs()}});
+
+function persistGroups(){write(KEYS.groups,groups);renderGroups()}
+function initials(name){return name.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join('').toUpperCase()}
+function openGroupModal(group=null){
+ editingGroupId=group?group.id:null;$('groupModalTitle').textContent=group?'Gruppe umbenennen':'Neue Gruppe erstellen';
+ $('groupModalDescription').textContent=group?'Ändere den Namen deiner Gruppe.':'Gib deiner Gruppe einen Namen.';
+ $('saveGroup').textContent=group?'Speichern':'Erstellen';$('groupName').value=group?group.name:'';
+ $('groupModalBackdrop').classList.remove('hidden');$('groupName').focus();
+}
+function closeGroupModal(){$('groupModalBackdrop').classList.add('hidden');editingGroupId=null}
+$('newGroupBtn').addEventListener('click',()=>openGroupModal());
+$('cancelGroup').addEventListener('click',closeGroupModal);
+$('groupModalBackdrop').addEventListener('click',event=>{if(event.target===$('groupModalBackdrop'))closeGroupModal()});
+$('groupForm').addEventListener('submit',event=>{
+ event.preventDefault();const name=$('groupName').value.trim();if(!name)return;
+ if(editingGroupId){const group=groups.find(g=>g.id===editingGroupId);if(group)group.name=name}
+ else groups.unshift({id:uid(),name,members:[]});
+ closeGroupModal();persistGroups();toast('Gruppe gespeichert.');
+});
+function renderGroups(){
+ $('groupCount').textContent=groups.length;
+ $('memberCount').textContent=groups.reduce((sum,g)=>sum+g.members.length,0);
+ const largest=groups.reduce((best,g)=>!best||g.members.length>best.members.length?g:best,null);
+ $('largestGroup').textContent=largest?largest.members.length:'–';
+ const query=$('searchGroups').value.trim().toLocaleLowerCase('de');
+ const visible=groups.filter(g=>g.name.toLocaleLowerCase('de').includes(query)||g.members.some(m=>m.name.toLocaleLowerCase('de').includes(query)));
+ const host=$('groups');host.replaceChildren();
+ if(!visible.length){const empty=document.createElement('div');empty.className='empty';empty.textContent=groups.length?'Keine Treffer gefunden.':'Noch keine Gruppen vorhanden.';host.append(empty);return}
+ visible.forEach(group=>{
+  const card=document.createElement('article');card.className='group-card';
+  const head=document.createElement('div');head.className='group-head';
+  const titleWrap=document.createElement('div');const title=document.createElement('div');title.className='group-title';title.textContent=group.name;
+  const meta=document.createElement('div');meta.className='group-meta';meta.textContent=`${group.members.length} ${group.members.length===1?'Mitglied':'Mitglieder'}`;titleWrap.append(title,meta);
+  const actions=document.createElement('div');actions.className='group-actions';
+  const rename=document.createElement('button');rename.type='button';rename.className='secondary';rename.textContent='Umbenennen';rename.onclick=()=>openGroupModal(group);
+  const remove=document.createElement('button');remove.type='button';remove.className='danger';remove.textContent='Löschen';remove.onclick=()=>{if(confirm(`Gruppe „${group.name}“ löschen?`)){groups=groups.filter(g=>g.id!==group.id);persistGroups()}};
+  actions.append(rename,remove);head.append(titleWrap,actions);
+  const form=document.createElement('form');form.className='member-form';
+  const input=document.createElement('input');input.maxLength=50;input.required=true;input.placeholder='Name hinzufügen …';
+  const add=document.createElement('button');add.type='submit';add.textContent='＋';form.append(input,add);
+  form.addEventListener('submit',event=>{
+   event.preventDefault();const name=input.value.trim();if(!name)return;
+   if(group.members.some(m=>m.name.toLocaleLowerCase('de')===name.toLocaleLowerCase('de'))){toast('Dieses Mitglied ist bereits in der Gruppe.');return}
+   group.members.push({id:uid(),name});persistGroups();toast(`${name} wurde hinzugefügt.`);
+  });
+  const list=document.createElement('ul');list.className='member-list';
+  if(!group.members.length){const li=document.createElement('li');li.className='member';li.textContent='Noch keine Mitglieder.';li.className='member group-meta';list.append(li)}
+  group.members.forEach(member=>{
+   const li=document.createElement('li');li.className='member';const name=document.createElement('span');name.className='member-name';
+   const avatar=document.createElement('span');avatar.className='emoji';avatar.style.display='inline-grid';avatar.style.width='30px';avatar.style.height='30px';avatar.style.fontSize='12px';avatar.style.marginRight='8px';avatar.textContent=initials(member.name);
+   name.append(avatar,document.createTextNode(member.name));
+   const del=document.createElement('button');del.type='button';del.className='remove-btn';del.textContent='Entfernen';del.onclick=()=>{group.members=group.members.filter(m=>m.id!==member.id);persistGroups()};
+   li.append(name,del);list.append(li);
+  });
+  card.append(head,form,list);host.append(card);
+ });
+}
+$('searchGroups').addEventListener('input',renderGroups);
+$('exportGroups').addEventListener('click',()=>{
+ const blob=new Blob([JSON.stringify(groups,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');a.href=url;a.download='my-app-center-gruppen.json';document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);
+});
+$('importGroups').addEventListener('click',()=>$('groupImportFile').click());
+$('groupImportFile').addEventListener('change',async event=>{
+ const file=event.target.files?.[0];if(!file)return;
+ try{
+  const data=JSON.parse(await file.text());
+  if(!Array.isArray(data)||!data.every(g=>g&&typeof g.name==='string'&&Array.isArray(g.members)))throw new Error('Format');
+  const imported=data.map(g=>({id:uid(),name:g.name.slice(0,50),members:g.members.filter(m=>m&&typeof m.name==='string').map(m=>({id:uid(),name:m.name.slice(0,50)}))}));
+  if(confirm(`${imported.length} Gruppen importieren? Vorhandene Gruppen bleiben erhalten.`)){groups=[...imported,...groups];persistGroups();toast('Import abgeschlossen.')}
+ }catch{toast('Datei konnte nicht importiert werden.')}
+ event.target.value='';
+});
+
+async function start(){
+ await initUsers();
+ apps=read(KEYS.apps,[]);groups=read(KEYS.groups,[]);
+ const sessionId=sessionStorage.getItem(KEYS.session);
+ current=users.find(u=>u.id===sessionId)||null;
+ if(current)showApp();else{sessionStorage.removeItem(KEYS.session);showLogin()}
+ if(Number(localStorage.getItem(KEYS.lock)||0)>Date.now())startLockTimer();
+}
+start();
+</script>
+</body>
+</html>

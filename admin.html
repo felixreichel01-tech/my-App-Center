@@ -8,6 +8,7 @@
     :root { color-scheme: dark; --panel: #16233a; --panel2: #1d2c45; --line: #304562; --text: #edf6ff; --muted: #afbdd2; --accent: #60a5fa; --danger: #ef4444; --success: #34d399; }
     * { box-sizing: border-box; }
     body { margin: 0; background: linear-gradient(150deg, #0c1322, #070d17); color: var(--text); font: 16px system-ui, -apple-system, Segoe UI, sans-serif; }
+    a { color: inherit; }
     .wrap { max-width: 1000px; margin: auto; padding: 24px 15px 55px; }
     .panel { background: rgba(22,35,58,.97); border: 1px solid var(--line); border-radius: 18px; padding: 20px; margin-top: 16px; box-shadow: 0 14px 32px rgba(0,0,0,.2); }
     h1 { font-size: clamp(26px,6vw,38px); margin: 0; }
@@ -36,9 +37,23 @@
     .hidden { display: none !important; }
     .msg { min-height: 22px; color: #34d399; }
     .notice { font-size: 13px; line-height: 1.55; color: var(--muted); }
-    .timeout-badge { display: inline-block; border: 1px solid rgba(239,68,68,.55); background: rgba(239,68,68,.12); color: #fca5a5; border-radius: 20px; padding: 3px 9px; font-size: 13px; font-weight: 700; }
-    .timeout-badge.clear { border-color: rgba(52,211,153,.4); background: rgba(52,211,153,.1); color: var(--success); }
-    @media (max-width:600px) { .user { align-items: stretch; } .user .actions > * { flex: 1; } }
+    .timeout-grid { display: grid; gap: 12px; margin-top: 12px; }
+    .timeout-card { background: rgba(29,44,69,.9); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .timeout-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+    .timeout-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .timeout-name { font-weight: 800; font-size: 1.05rem; }
+    .status-pill { display: inline-block; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; border: 1px solid rgba(96,165,250,.4); background: rgba(96,165,250,.12); color: var(--accent); }
+    .status-pill.active { border-color: rgba(239,68,68,.55); background: rgba(239,68,68,.12); color: #fca5a5; }
+    .status-pill.safe { border-color: rgba(52,211,153,.4); background: rgba(52,211,153,.12); color: var(--success); }
+    .timeout-meta { color: var(--muted); font-size: 13px; line-height: 1.5; }
+    .timeout-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .timeout-actions button { padding: 9px 12px; }
+    .duration-form { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; margin-top: 8px; }
+    .duration-form label { margin: 0 0 5px; }
+    .duration-field { width: 140px; }
+    .duration-field input { width: 100%; }
+    .small { color: var(--muted); font-size: 12px; }
+    @media (max-width:600px) { .user { align-items: stretch; } .user .actions > * { flex: 1; } .timeout-card { flex-direction: column; } .timeout-actions { width: 100%; } .timeout-actions > * { flex: 1 1 0; } .duration-form { align-items: stretch; } .duration-field { width: 100%; flex: 1 1 100%; } }
   </style>
 </head>
 <body>
@@ -90,8 +105,8 @@
       <section id="timeoutsPanel" class="tab-panel">
         <div class="panel">
           <h2>Login-Timeouts</h2>
-          <p class="notice">Hier siehst du die Fehlversuche und die verbleibende Sperrzeit je Benutzer. Mit den Tasten kannst du den Timeout um 10 Sekunden ändern; „Entsperren“ hebt ihn sofort auf.</p>
-          <div id="timeouts"></div>
+          <p class="notice">Lege für normale Benutzer eine Sperrzeit in Sekunden fest, verlängere oder verkürze sie. Die Restzeit aktualisiert sich automatisch.</p>
+          <div id="timeouts" class="timeout-grid"></div>
         </div>
       </section>
     </section>
@@ -150,8 +165,8 @@
         timeoutUntil: Number(user.timeoutUntil || 0),
         lockedPasswordHash: user.lockedPasswordHash || null
       };
-      // Alte automatische Timeout-Sperren dürfen nach Ablauf nicht dauerhaft gesperrt bleiben.
-      if (normalized.accountLocked && normalized.timeoutUntil && !normalized.lockedPasswordHash && normalized.timeoutUntil <= Date.now()) {
+      // Automatic timeout locks expire; manually locked accounts have no timeoutUntil.
+      if (normalized.accountLocked && normalized.timeoutUntil && normalized.timeoutUntil <= Date.now()) {
         normalized.accountLocked = false;
         normalized.timeoutUntil = 0;
         normalized.failedAttempts = 0;
@@ -186,8 +201,9 @@
         name.className = 'user-name';
         name.textContent = user.username;
         const state = document.createElement('div');
-        state.className = 'state' + (user.accountLocked ? ' locked' : '');
-        state.textContent = `${user.role === 'admin' ? 'Administrator' : 'Benutzer'} · ${user.accountLocked ? 'Gesperrt' : 'Aktiv'}`;
+        const locked = !!user.accountLocked || getRemainingSeconds(user) > 0;
+        state.className = 'state' + (locked ? ' locked' : '');
+        state.textContent = `${user.role === 'admin' ? 'Administrator' : 'Benutzer'} · ${locked ? 'Gesperrt' : 'Aktiv'} · Fehlversuche: ${Number(user.failedAttempts || 0)}/${LOGIN_SETTINGS.maxFailedAttempts}`;
         info.append(name, state);
 
         const actions = document.createElement('div');
@@ -202,10 +218,11 @@
           $('resetForm').classList.remove('hidden');
           $('newPassword').focus();
         };
+
         const lock = document.createElement('button');
         lock.type = 'button';
-        lock.className = user.accountLocked ? 'secondary' : 'danger';
-        lock.textContent = user.accountLocked ? 'Entsperren' : 'Sperren';
+        lock.className = user.accountLocked && !user.timeoutUntil ? 'secondary' : 'danger';
+        lock.textContent = user.accountLocked && !user.timeoutUntil ? 'Entsperren' : 'Sperren';
         lock.disabled = user.id === current.id;
         lock.onclick = () => toggleManualLock(user);
         actions.append(reset, lock);
@@ -217,53 +234,114 @@
     function renderTimeouts() {
       const host = $('timeouts');
       host.replaceChildren();
-      const regularUsers = users.filter((user) => user.role !== 'admin');
-      if (!regularUsers.length) {
-        host.textContent = 'Es sind noch keine normalen Benutzerkonten vorhanden.';
-        host.className = 'muted';
+      const normalUsers = users.filter((user) => user.role !== 'admin');
+
+      if (!normalUsers.length) {
+        const empty = document.createElement('div');
+        empty.className = 'muted';
+        empty.textContent = 'Es sind noch keine normalen Benutzerkonten vorhanden.';
+        host.append(empty);
         return;
       }
-      host.className = '';
 
-      regularUsers.forEach((user) => {
-        const row = document.createElement('article');
-        row.className = 'user';
-        const info = document.createElement('div');
-        info.className = 'user-meta';
+      normalUsers.forEach((user) => {
+        const card = document.createElement('article');
+        card.className = 'timeout-card';
+        const main = document.createElement('div');
+        main.className = 'timeout-main';
+        const header = document.createElement('div');
+        header.className = 'timeout-header';
         const name = document.createElement('div');
-        name.className = 'user-name';
+        name.className = 'timeout-name';
         name.textContent = user.username;
+
+        const status = document.createElement('span');
         const remaining = getRemainingSeconds(user);
-        const badge = document.createElement('span');
-        badge.className = 'timeout-badge' + (remaining > 0 ? '' : ' clear');
-        badge.textContent = remaining > 0 ? `Gesperrt · noch ${remaining} Sek.` : 'Kein aktiver Timeout';
-        const attempts = document.createElement('div');
-        attempts.className = 'small';
-        attempts.textContent = `Fehlversuche: ${Number(user.failedAttempts || 0)} von ${LOGIN_SETTINGS.maxFailedAttempts}`;
-        info.append(name, badge, attempts);
+        if (remaining > 0) {
+          status.className = 'status-pill active';
+          status.textContent = `Gesperrt · ${remaining}s`;
+        } else if (user.accountLocked) {
+          status.className = 'status-pill';
+          status.textContent = 'Manuell gesperrt';
+        } else {
+          status.className = 'status-pill safe';
+          status.textContent = 'Nicht gesperrt';
+        }
+        header.append(name, status);
+
+        const meta = document.createElement('div');
+        meta.className = 'timeout-meta';
+        meta.textContent = `Fehlversuche: ${Number(user.failedAttempts || 0)} / ${LOGIN_SETTINGS.maxFailedAttempts} · Verbleibende Sperrzeit: ${remaining} Sek.`;
+
+        const durationForm = document.createElement('form');
+        durationForm.className = 'duration-form';
+        const fieldWrap = document.createElement('div');
+        fieldWrap.className = 'duration-field';
+        const label = document.createElement('label');
+        const fieldId = `timeout-seconds-${user.id}`;
+        label.htmlFor = fieldId;
+        label.textContent = 'Timeout festlegen (Sekunden)';
+        const input = document.createElement('input');
+        input.id = fieldId;
+        input.type = 'number';
+        input.min = '1';
+        input.max = '86400';
+        input.step = '1';
+        input.required = true;
+        input.inputMode = 'numeric';
+        input.placeholder = 'z. B. 120';
+        input.setAttribute('aria-label', `Timeoutdauer für ${user.username} in Sekunden`);
+        fieldWrap.append(label, input);
+        const setButton = document.createElement('button');
+        setButton.type = 'submit';
+        setButton.textContent = 'Timeout setzen';
+        durationForm.append(fieldWrap, setButton);
+        durationForm.addEventListener('submit', (event) => {
+          event.preventDefault();
+          const seconds = Number(input.value);
+          if (!Number.isInteger(seconds) || seconds < 1 || seconds > 86400) {
+            showMessage('Bitte eine ganze Zahl zwischen 1 und 86400 Sekunden eingeben.', true);
+            return;
+          }
+          setTimeoutDuration(user, seconds);
+        });
 
         const actions = document.createElement('div');
-        actions.className = 'actions';
+        actions.className = 'timeout-actions';
         const shorten = document.createElement('button');
         shorten.type = 'button';
         shorten.className = 'secondary';
-        shorten.textContent = '−10 Sekunden';
+        shorten.textContent = '−10s';
         shorten.disabled = remaining === 0;
         shorten.onclick = () => changeTimeout(user, -10000);
         const extend = document.createElement('button');
         extend.type = 'button';
         extend.className = 'secondary';
-        extend.textContent = '+10 Sekunden';
+        extend.textContent = '+10s';
         extend.onclick = () => changeTimeout(user, 10000);
         const clear = document.createElement('button');
         clear.type = 'button';
-        clear.textContent = 'Entsperren';
+        clear.className = 'secondary';
+        clear.textContent = 'Timeout aufheben';
         clear.disabled = remaining === 0;
         clear.onclick = () => clearTimeoutForUser(user);
         actions.append(shorten, extend, clear);
-        row.append(info, actions);
-        host.append(row);
+
+        main.append(header, meta, durationForm);
+        card.append(main, actions);
+        host.append(card);
       });
+    }
+
+    function setTimeoutDuration(user, seconds) {
+      user.timeoutUntil = Date.now() + seconds * 1000;
+      user.failedAttempts = Math.max(Number(user.failedAttempts || 0), LOGIN_SETTINGS.maxFailedAttempts);
+      // Keep timed lock state distinct from a manual account lock.
+      if (!user.lockedPasswordHash) user.accountLocked = false;
+      save();
+      renderTimeouts();
+      renderAccounts();
+      showMessage(`Timeout für ${user.username} auf ${seconds} Sekunden gesetzt.`);
     }
 
     function changeTimeout(user, deltaMs) {
@@ -271,7 +349,6 @@
       const currentUntil = Number(user.timeoutUntil) > now ? Number(user.timeoutUntil) : now;
       const nextUntil = Math.max(now, currentUntil + deltaMs);
       user.timeoutUntil = nextUntil > now ? nextUntil : 0;
-      // Timed locks are separate from an administrator's permanent account lock.
       if (!user.lockedPasswordHash) user.accountLocked = false;
       if (!user.timeoutUntil) user.failedAttempts = 0;
       save();
@@ -291,7 +368,7 @@
 
     function toggleManualLock(user) {
       if (user.id === current.id) return;
-      if (user.accountLocked) {
+      if (user.accountLocked && !user.timeoutUntil) {
         user.accountLocked = false;
         if (user.lockedPasswordHash) {
           user.passwordHash = user.lockedPasswordHash;
@@ -302,7 +379,8 @@
         user.lockedPasswordHash = user.passwordHash;
         user.passwordHash = 'account-locked:' + crypto.randomUUID();
         user.accountLocked = true;
-        showMessage(`${user.username} wurde gesperrt.`);
+        user.timeoutUntil = 0;
+        showMessage(`${user.username} wurde manuell gesperrt.`);
       }
       save();
       renderAccounts();
@@ -320,7 +398,7 @@
       const user = users.find((item) => item.id === targetId);
       if (!user) return;
       const passwordHash = await hash(password);
-      if (user.accountLocked) user.pendingPasswordHash = passwordHash;
+      if (user.accountLocked && user.lockedPasswordHash) user.pendingPasswordHash = passwordHash;
       else user.passwordHash = passwordHash;
       save();
       showMessage(`Das Passwort für ${user.username} wurde zurückgesetzt.`);

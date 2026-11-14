@@ -65,7 +65,6 @@
     .tab.active { background: var(--panel2); color: var(--text); border-color: var(--line); }
     .view { display: none; }
     .view.active { display: block; }
-    .pill { font-size: 12px; color: var(--success); border: 1px solid rgba(52,211,153,.4); padding: 3px 8px; border-radius: 20px; }
     table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 12px; }
     th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
     th { color: var(--muted); }
@@ -237,18 +236,23 @@
 
   <script>
     'use strict';
+
     const KEYS = {
       apps: 'my-app-center-v1',
       groups: 'my-app-center-groups-v1',
       users: 'mac-admin-users-v2',
       logs: 'mac-admin-log-v2',
-      failures: 'mac-login-failures-v2',
-      lock: 'mac-login-lock-v2',
       session: 'mac-session-v2'
     };
+
+    const LOGIN_SETTINGS = {
+      maxFailedAttempts: 3,
+      lockDurationMs: 60000
+    };
+
     const DEFAULT_ADMIN = { username: 'Pokemon2', password: 'Hallo226' };
     const $ = (id) => document.getElementById(id);
-    let apps = [], groups = [], users = [], logs = [], current = null, editingAppId = null, editingUserId = null, editingGroupId = null, lockTimer = null;
+    let apps = [], groups = [], users = [], logs = [], current = null, editingAppId = null, editingUserId = null, editingGroupId = null;
 
     function read(key, fallback) {
       try {
@@ -293,13 +297,39 @@
       setTimeout(() => el.remove(), 2300);
     }
 
+    function getRemainingSeconds(user) {
+      if (!user || !user.timeoutUntil || Number(user.timeoutUntil) <= Date.now()) return 0;
+      return Math.max(0, Math.ceil((Number(user.timeoutUntil) - Date.now()) / 1000));
+    }
+
+    function isUserLocked(user) {
+      if (!user) return false;
+      return !!user.accountLocked || getRemainingSeconds(user) > 0;
+    }
+
+    function clearUserTimeout(user) {
+      if (!user) return;
+      user.failedAttempts = 0;
+      user.timeoutUntil = 0;
+      user.accountLocked = false;
+      delete user.lockedPasswordHash;
+    }
+
     async function initUsers() {
       users = read(KEYS.users, []);
       if (!Array.isArray(users) || users.length === 0) {
-        users = [{ id: uid(), username: DEFAULT_ADMIN.username, passwordHash: await hash(DEFAULT_ADMIN.password), role: 'admin', accountLocked: false }];
+        users = [{ id: uid(), username: DEFAULT_ADMIN.username, passwordHash: await hash(DEFAULT_ADMIN.password), role: 'admin', accountLocked: false, failedAttempts: 0, timeoutUntil: 0 }];
         write(KEYS.users, users);
       }
-      users = users.map((user) => ({ ...user, accountLocked: !!user.accountLocked, lockedPasswordHash: user.lockedPasswordHash || null }));
+
+      users = users.map((user) => ({
+        ...user,
+        accountLocked: !!user.accountLocked,
+        failedAttempts: Number(user.failedAttempts || 0),
+        timeoutUntil: Number(user.timeoutUntil || 0),
+        lockedPasswordHash: user.lockedPasswordHash || null
+      }));
+
       write(KEYS.users, users);
     }
 
@@ -315,7 +345,8 @@
       $('appArea').style.display = 'none';
       $('loginUser').disabled = false;
       $('loginPass').disabled = false;
-      updateLock();
+      $('countdown').textContent = '';
+      $('loginMessage').textContent = '';
     }
 
     function showApp() {
@@ -347,57 +378,34 @@
     document.querySelectorAll('.tab').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 
     function updateLock() {
-      const until = Number(localStorage.getItem(KEYS.lock) || 0);
-      const seconds = Math.max(0, Math.ceil((until - Date.now()) / 1000));
-      const locked = seconds > 0;
-      $('loginBtn').disabled = locked;
-      $('loginUser').disabled = locked;
-      $('loginPass').disabled = locked;
-      $('countdown').textContent = locked ? `Gesperrt – noch ${seconds} Sekunden` : '';
-      if (!locked && until) {
-        localStorage.removeItem(KEYS.lock);
-        localStorage.removeItem(KEYS.failures);
-        $('loginMessage').textContent = 'Du kannst dich jetzt wieder anmelden.';
-      }
-      return locked;
+      return false;
     }
 
     function startLockTimer() {
-      if (lockTimer) clearInterval(lockTimer);
-      lockTimer = setInterval(() => {
-        if (!updateLock()) {
-          clearInterval(lockTimer);
-          lockTimer = null;
-        }
-      }, 250);
+      return;
     }
 
     $('loginForm').addEventListener('submit', async (event) => {
       event.preventDefault();
       if (updateLock()) return;
+
       const username = $('loginUser').value.trim();
       const password = $('loginPass').value;
       const found = users.find((u) => u.username.toLowerCase() === username.toLowerCase());
 
       if (!found) {
         recordLogin(username, false);
-        const fails = Number(localStorage.getItem(KEYS.failures) || 0) + 1;
-        if (fails >= 3) {
-          localStorage.setItem(KEYS.failures, '0');
-          localStorage.setItem(KEYS.lock, String(Date.now() + 60000));
-          $('loginMessage').textContent = 'Drei falsche Versuche. Bitte warte eine Minute.';
-          startLockTimer();
-        } else {
-          localStorage.setItem(KEYS.failures, String(fails));
-          $('loginMessage').textContent = `Benutzername oder Passwort falsch. Noch ${3 - fails} Versuch(e).`;
-        }
+        $('loginMessage').textContent = 'Benutzername oder Passwort falsch.';
         $('loginPass').value = '';
         return;
       }
 
-      if (found.accountLocked) {
+      if (isUserLocked(found)) {
+        const secondsLeft = getRemainingSeconds(found);
         recordLogin(username, false);
-        $('loginMessage').textContent = 'Dieses Konto ist gesperrt. Bitte den Administrator kontaktieren.';
+        $('loginMessage').textContent = secondsLeft > 0
+          ? `Dieses Konto ist noch ${secondsLeft} Sekunden gesperrt.`
+          : 'Dieses Konto ist gesperrt. Bitte den Administrator kontaktieren.';
         $('loginPass').value = '';
         return;
       }
@@ -405,22 +413,23 @@
       const valid = found.passwordHash === await hash(password);
       if (!valid) {
         recordLogin(username, false);
-        const fails = Number(localStorage.getItem(KEYS.failures) || 0) + 1;
-        if (fails >= 3) {
-          localStorage.setItem(KEYS.failures, '0');
-          localStorage.setItem(KEYS.lock, String(Date.now() + 60000));
-          $('loginMessage').textContent = 'Drei falsche Versuche. Bitte warte eine Minute.';
-          startLockTimer();
+        found.failedAttempts = (Number(found.failedAttempts) || 0) + 1;
+
+        if (found.failedAttempts >= LOGIN_SETTINGS.maxFailedAttempts) {
+          found.failedAttempts = LOGIN_SETTINGS.maxFailedAttempts;
+          found.timeoutUntil = Date.now() + LOGIN_SETTINGS.lockDurationMs;
+          found.accountLocked = true;
+          $('loginMessage').textContent = 'Drei falsche Versuche. Das Konto wurde für 60 Sekunden gesperrt.';
         } else {
-          localStorage.setItem(KEYS.failures, String(fails));
-          $('loginMessage').textContent = `Benutzername oder Passwort falsch. Noch ${3 - fails} Versuch(e).`;
+          $('loginMessage').textContent = `Benutzername oder Passwort falsch. Noch ${LOGIN_SETTINGS.maxFailedAttempts - found.failedAttempts} Versuch(e).`;
         }
+
+        write(KEYS.users, users);
         $('loginPass').value = '';
         return;
       }
 
-      localStorage.removeItem(KEYS.failures);
-      localStorage.removeItem(KEYS.lock);
+      clearUserTimeout(found);
       recordLogin(username, true);
       current = found;
       sessionStorage.setItem(KEYS.session, current.id);
@@ -476,10 +485,8 @@
       apps.forEach((app) => {
         const item = document.createElement('article');
         item.className = 'app-item';
-
         const main = document.createElement('div');
         main.className = 'app-main';
-
         const icon = document.createElement('div');
         icon.className = 'emoji';
         icon.textContent = app.emoji || '🌐';
@@ -578,6 +585,8 @@
         user.lockedPasswordHash = user.passwordHash;
         user.passwordHash = `locked-${uid()}`;
         user.accountLocked = true;
+        user.timeoutUntil = 0;
+        user.failedAttempts = 0;
         toast(`${user.username} wurde gesperrt.`);
       }
       write(KEYS.users, users);
@@ -594,6 +603,8 @@
       }
       user.passwordHash = await hash(trimmed);
       user.accountLocked = false;
+      user.failedAttempts = 0;
+      user.timeoutUntil = 0;
       delete user.lockedPasswordHash;
       write(KEYS.users, users);
       renderUsers();
@@ -615,7 +626,10 @@
 
         const status = document.createElement('div');
         status.className = 'group-meta';
-        status.textContent = `${user.role === 'admin' ? 'Administrator' : 'Benutzer'}${user.accountLocked ? ' · Gesperrt' : ' · Aktiv'}`;
+        const remaining = getRemainingSeconds(user);
+        const timeoutText = remaining > 0 ? ` · Timeout: ${remaining}s` : ' · Timeout: 0s';
+        const failureText = ` · Fehlversuche: ${Number(user.failedAttempts || 0)}/${LOGIN_SETTINGS.maxFailedAttempts}`;
+        status.textContent = `${user.role === 'admin' ? 'Administrator' : 'Benutzer'}${user.accountLocked ? ' · Gesperrt' : ' · Aktiv'}${failureText}${timeoutText}`;
         info.append(title, status);
 
         const actions = document.createElement('div');
@@ -637,12 +651,41 @@
         roleBtn.className = 'secondary';
         roleBtn.type = 'button';
         roleBtn.textContent = user.role === 'admin' ? 'Zum Benutzer machen' : 'Zum Admin machen';
-        roleBtn.disabled = user.id === current.id || (user.role === 'admin' && users.filter(x => x.role === 'admin').length === 1);
+        roleBtn.disabled = user.id === current.id || (user.role === 'admin' && users.filter((x) => x.role === 'admin').length === 1);
         roleBtn.onclick = () => {
           user.role = user.role === 'admin' ? 'user' : 'admin';
           write(KEYS.users, users);
           renderUsers();
           toast('Benutzerrolle geändert.');
+        };
+
+        const shortenBtn = document.createElement('button');
+        shortenBtn.type = 'button';
+        shortenBtn.className = 'secondary';
+        shortenBtn.textContent = '-10s';
+        shortenBtn.onclick = () => {
+          if (!user.timeoutUntil) user.timeoutUntil = Date.now() + 1000;
+          user.timeoutUntil = Math.max(Date.now(), Number(user.timeoutUntil) - 10000);
+          user.accountLocked = getRemainingSeconds(user) > 0;
+          if (getRemainingSeconds(user) === 0) {
+            user.failedAttempts = 0;
+            user.timeoutUntil = 0;
+            user.accountLocked = false;
+          }
+          write(KEYS.users, users);
+          renderUsers();
+        };
+
+        const extendBtn = document.createElement('button');
+        extendBtn.type = 'button';
+        extendBtn.className = 'secondary';
+        extendBtn.textContent = '+10s';
+        extendBtn.onclick = () => {
+          user.timeoutUntil = (Number(user.timeoutUntil) || Date.now()) + 10000;
+          user.failedAttempts = Math.max(Number(user.failedAttempts || 0), LOGIN_SETTINGS.maxFailedAttempts);
+          user.accountLocked = true;
+          write(KEYS.users, users);
+          renderUsers();
         };
 
         const lockBtn = document.createElement('button');
@@ -656,7 +699,7 @@
         del.className = 'danger';
         del.type = 'button';
         del.textContent = 'Löschen';
-        del.disabled = user.id === current.id || (user.role === 'admin' && users.filter(x => x.role === 'admin').length === 1);
+        del.disabled = user.id === current.id || (user.role === 'admin' && users.filter((x) => x.role === 'admin').length === 1);
         del.onclick = () => {
           if (confirm(`Benutzer ${user.username} löschen?`)) {
             users = users.filter((x) => x.id !== user.id);
@@ -665,7 +708,7 @@
           }
         };
 
-        actions.append(edit, resetBtn, lockBtn, roleBtn, del);
+        actions.append(edit, resetBtn, shortenBtn, extendBtn, lockBtn, roleBtn, del);
         row.append(info, actions);
         host.append(row);
       });
@@ -728,7 +771,7 @@
           $('currentUser').textContent = current.username + ' · Administrator';
         }
       } else {
-        users.push({ id: uid(), username, passwordHash: await hash(password), role, accountLocked: false });
+        users.push({ id: uid(), username, passwordHash: await hash(password), role, accountLocked: false, failedAttempts: 0, timeoutUntil: 0 });
       }
 
       write(KEYS.users, users);
@@ -998,30 +1041,32 @@
         }
       } catch {
         toast('Datei konnte nicht importiert werden.');
+      } finally {
+        event.target.value = '';
       }
-      event.target.value = '';
     });
 
-    async function start() {
+    async function initApp() {
       await initUsers();
       apps = read(KEYS.apps, []);
       groups = read(KEYS.groups, []);
-      const sessionId = sessionStorage.getItem(KEYS.session);
-      current = users.find((u) => u.id === sessionId) || null;
+      logs = read(KEYS.logs, []);
+
+      const savedSession = sessionStorage.getItem(KEYS.session);
+      current = users.find((user) => user.id === savedSession) || null;
 
       if (current) {
         showApp();
       } else {
-        sessionStorage.removeItem(KEYS.session);
         showLogin();
       }
 
-      if (Number(localStorage.getItem(KEYS.lock) || 0) > Date.now()) {
-        startLockTimer();
-      }
+      renderApps();
+      renderGroups();
+      renderLogs();
     }
 
-    start();
+    initApp();
   </script>
 </body>
 </html>

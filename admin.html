@@ -1,39 +1,282 @@
 <!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Benutzerverwaltung · My App Center</title>
-<style>
-:root{color-scheme:dark;--bg:#0b1220;--panel:#16233a;--panel2:#1d2c45;--line:#304562;--text:#edf6ff;--muted:#afbdd2;--accent:#60a5fa;--danger:#ef4444;--success:#34d399}*{box-sizing:border-box}body{margin:0;background:linear-gradient(150deg,#0c1322,#070d17);color:var(--text);font:16px system-ui,-apple-system,Segoe UI,sans-serif}.wrap{max-width:900px;margin:auto;padding:24px 15px 55px}.panel{background:rgba(22,35,58,.97);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:16px;box-shadow:0 14px 32px #0003}h1{font-size:clamp(26px,6vw,38px);margin:0}h2{font-size:21px;margin:0 0 8px}.muted{color:var(--muted)}.row,.actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.top{justify-content:space-between}.user{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;border:1px solid var(--line);background:var(--panel2);border-radius:13px;padding:14px;margin-top:10px}.user-name{font-weight:750}.state{font-size:13px;color:var(--success)}.state.locked{color:#fca5a5}button,input{font:inherit}button{border:0;border-radius:10px;padding:10px 13px;background:var(--accent);color:#071521;font-weight:700;cursor:pointer}button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--danger);color:#fff}button:disabled{opacity:.5;cursor:not-allowed}label{display:block;color:var(--muted);font-size:13px;margin:13px 0 6px}input{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--line);background:#0d1728;color:var(--text)}.form{max-width:440px}.hidden{display:none!important}.msg{min-height:22px;color:#fca5a5}.notice{font-size:13px;line-height:1.55;color:var(--muted)}@media(max-width:600px){.user{align-items:stretch}.user .actions>*{flex:1}}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Benutzerverwaltung · My App Center</title>
+  <style>
+    :root { color-scheme: dark; --bg: #0b1220; --panel: #16233a; --panel2: #1d2c45; --line: #304562; --text: #edf6ff; --muted: #afbdd2; --accent: #60a5fa; --danger: #ef4444; --success: #34d399; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: linear-gradient(150deg, #0c1322, #070d17); color: var(--text); font: 16px system-ui, -apple-system, Segoe UI, sans-serif; }
+    .wrap { max-width: 900px; margin: auto; padding: 24px 15px 55px; }
+    .panel { background: rgba(22,35,58,.97); border: 1px solid var(--line); border-radius: 18px; padding: 20px; margin-top: 16px; box-shadow: 0 14px 32px rgba(0,0,0,.2); }
+    h1 { font-size: clamp(26px,6vw,38px); margin: 0; }
+    h2 { font-size: 21px; margin: 0 0 8px; }
+    .muted { color: var(--muted); }
+    .row, .actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .top { justify-content: space-between; }
+    .user { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; border: 1px solid var(--line); background: var(--panel2); border-radius: 13px; padding: 14px; margin-top: 10px; }
+    .user-name { font-weight: 750; }
+    .state { font-size: 13px; color: var(--success); }
+    .state.locked { color: #fca5a5; }
+    button, input { font: inherit; }
+    button { border: 0; border-radius: 10px; padding: 10px 13px; background: var(--accent); color: #071521; font-weight: 700; cursor: pointer; }
+    button.secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--line); }
+    button.danger { background: var(--danger); color: #fff; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    label { display: block; color: var(--muted); font-size: 13px; margin: 13px 0 6px; }
+    input { width: 100%; padding: 11px 13px; border-radius: 10px; border: 1px solid var(--line); background: #0d1728; color: var(--text); }
+    .form { max-width: 440px; }
+    .hidden { display: none !important; }
+    .msg { min-height: 22px; color: #fca5a5; }
+    .notice { font-size: 13px; line-height: 1.55; color: var(--muted); }
+    .user-meta { display:flex; flex-direction:column; gap:4px; min-width:0; }
+    .small { color: var(--muted); font-size: 12px; }
+    @media (max-width:600px) { .user { align-items: stretch; } .user .actions > * { flex: 1; } }
+  </style>
 </head>
 <body>
-<main class="wrap">
-<header class="row top"><div><h1>Benutzerverwaltung</h1><p class="muted">Passwörter zurücksetzen und Konten sperren oder entsperren.</p></div><div class="actions"><a href="./" style="color:var(--accent)">Zur App</a><button class="secondary" id="logout" type="button">Abmelden</button></div></header>
-<section id="denied" class="panel hidden"><h2>Kein Zugriff</h2><p class="muted">Melde dich in der App mit einem Administratorkonto an und öffne diese Seite anschließend erneut.</p><a href="./" style="color:var(--accent)">Zur Anmeldung</a></section>
-<section id="admin" class="hidden">
-<div class="panel"><h2>Benutzerkonten</h2><p class="notice">Das Zurücksetzen setzt ein neues Passwort. Eine Sperre verhindert neue Anmeldungen. Bereits angemeldete Sitzungen werden durch diese browserbasierte App nicht automatisch beendet.</p><div id="users"></div><p id="message" class="msg" role="status"></p></div>
-<div class="panel"><h2>Passwort zurücksetzen</h2><p class="muted" id="targetLabel">Wähle zuerst einen Benutzer aus der Liste.</p><form id="resetForm" class="form hidden"><label for="newPassword">Neues Passwort</label><input id="newPassword" type="password" minlength="4" autocomplete="new-password" required><div class="actions"><button type="submit">Passwort speichern</button><button type="button" class="secondary" id="cancel">Abbrechen</button></div></form></div>
-<p class="notice">Hinweis: Diese Anwendung speichert Benutzerkonten lokal im Browser. Das ist keine sichere serverseitige Benutzerverwaltung und Änderungen werden nicht automatisch auf andere Geräte übertragen.</p>
-</section>
-</main>
-<script>
-'use strict';
-const USERS_KEY='mac-admin-users-v2',SESSION_KEY='mac-session-v2';
-const $=id=>document.getElementById(id);
-let users=[],current=null,targetId=null;
-function readUsers(){try{const value=JSON.parse(localStorage.getItem(USERS_KEY)||'[]');return Array.isArray(value)?value:[]}catch{return []}}
-function save(){localStorage.setItem(USERS_KEY,JSON.stringify(users))}
-async function hash(text){const bytes=new TextEncoder().encode(text);const digest=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('')}
-function showMessage(text,error=false){$('message').textContent=text;$('message').style.color=error?'#fca5a5':'#34d399'}
-function closeReset(){targetId=null;$('resetForm').reset();$('resetForm').classList.add('hidden');$('targetLabel').textContent='Wähle zuerst einen Benutzer aus der Liste.'}
-function render(){const host=$('users');host.replaceChildren();users.forEach(user=>{const row=document.createElement('article');row.className='user';const info=document.createElement('div');const name=document.createElement('div');name.className='user-name';name.textContent=user.username;const state=document.createElement('div');const locked=!!user.accountLocked;state.className='state'+(locked?' locked':'');state.textContent=`${user.role==='admin'?'Administrator':'Benutzer'} · ${locked?'Gesperrt':'Aktiv'}`;info.append(name,state);const actions=document.createElement('div');actions.className='actions';const reset=document.createElement('button');reset.type='button';reset.className='secondary';reset.textContent='Passwort zurücksetzen';reset.onclick=()=>{targetId=user.id;$('targetLabel').textContent=`Neues Passwort für ${user.username} festlegen.`;$('resetForm').classList.remove('hidden');$('newPassword').focus()};const lock=document.createElement('button');lock.type='button';lock.className=locked?'secondary':'danger';lock.textContent=locked?'Entsperren':'Sperren';lock.disabled=user.id===current.id;lock.title=user.id===current.id?'Das aktuell angemeldete Administratorkonto kann hier nicht gesperrt werden':'';lock.onclick=()=>toggleLock(user);actions.append(reset,lock);row.append(info,actions);host.append(row)})}
-function toggleLock(user){if(user.id===current.id)return;if(user.accountLocked){if(!user.passwordHash&&user.pendingPasswordHash){user.passwordHash=user.pendingPasswordHash}user.accountLocked=false;delete user.pendingPasswordHash;delete user.lockedPasswordHash;showMessage(`${user.username} wurde entsperrt.`)}else{user.lockedPasswordHash=user.passwordHash;user.passwordHash='account-locked:'+crypto.randomUUID();user.accountLocked=true;showMessage(`${user.username} wurde gesperrt.`)}save();render()}
-$('resetForm').addEventListener('submit',async event=>{event.preventDefault();if(current?.role!=='admin')return;const password=$('newPassword').value;if(password.length<4){showMessage('Das Passwort muss mindestens 4 Zeichen lang sein.',true);return}const user=users.find(item=>item.id===targetId);if(!user)return;const passwordHash=await hash(password);if(user.accountLocked)user.pendingPasswordHash=passwordHash;else user.passwordHash=passwordHash;save();showMessage(`Das Passwort für ${user.username} wurde zurückgesetzt.`);closeReset()});
-$('cancel').addEventListener('click',closeReset);
-$('logout').addEventListener('click',()=>{sessionStorage.removeItem(SESSION_KEY);location.href='./'});
-users=readUsers();const sessionId=sessionStorage.getItem(SESSION_KEY);current=users.find(user=>user.id===sessionId)||null;if(current?.role==='admin'){$('admin').classList.remove('hidden');render()}else{$('denied').classList.remove('hidden')}
-</script>
+  <main class="wrap">
+    <header class="row top">
+      <div>
+        <h1>Benutzerverwaltung</h1>
+        <p class="muted">Passwörter zurücksetzen, Konten sperren und Login-Timeouts verwalten.</p>
+      </div>
+      <div class="actions">
+        <a href="./" style="color:var(--text);text-decoration:none;">Zurück zur App</a>
+        <button class="secondary" id="logout" type="button">Abmelden</button>
+      </div>
+    </header>
+
+    <section id="denied" class="panel hidden">
+      <h2>Kein Zugriff</h2>
+      <p class="muted">Melde dich in der App mit einem Administratorkonto an und öffne diese Seite anschließend erneut.</p>
+      <a href="./" style="color:var(--accent);">Zur App</a>
+    </section>
+
+    <section id="admin" class="hidden">
+      <div class="panel">
+        <h2>Benutzerkonten</h2>
+        <p class="notice">Ein Timeout ist je Benutzer individuell. Der Administrator kann die verbleibende Sperrzeit sehen und sie nach Belieben verlängern oder verkürzen.</p>
+        <div id="users"></div>
+        <p id="message" class="msg" role="status"></p>
+      </div>
+
+      <div class="panel">
+        <h2>Passwort zurücksetzen</h2>
+        <p class="muted" id="targetLabel">Wähle zuerst einen Benutzer aus der Liste.</p>
+        <form id="resetForm" class="form hidden">
+          <label for="newPassword">Neues Passwort</label>
+          <input id="newPassword" type="password" minlength="4" autocomplete="new-password" required>
+          <div class="actions">
+            <button type="submit">Passwort speichern</button>
+            <button type="button" class="secondary" id="cancel">Abbrechen</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    'use strict';
+
+    const USERS_KEY = 'mac-admin-users-v2';
+    const SESSION_KEY = 'mac-session-v2';
+    const LOGIN_SETTINGS = { maxFailedAttempts: 3, lockDurationMs: 60000 };
+    const $ = (id) => document.getElementById(id);
+    let users = [], current = null, targetId = null;
+
+    function readUsers() {
+      try {
+        const value = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
+        return Array.isArray(value) ? value : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function save() {
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    }
+
+    async function hash(text) {
+      const bytes = new TextEncoder().encode(text);
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      return [...new Uint8Array(digest)].map((x) => x.toString(16).padStart(2, '0')).join('');
+    }
+
+    function getRemainingSeconds(user) {
+      if (!user || !user.timeoutUntil || Number(user.timeoutUntil) <= Date.now()) return 0;
+      return Math.max(0, Math.ceil((Number(user.timeoutUntil) - Date.now()) / 1000));
+    }
+
+    function showMessage(text, error = false) {
+      $('message').textContent = text;
+      $('message').style.color = error ? '#fca5a5' : '#34d399';
+    }
+
+    function closeReset() {
+      targetId = null;
+      $('resetForm').reset();
+      $('resetForm').classList.add('hidden');
+      $('targetLabel').textContent = 'Wähle zuerst einen Benutzer aus der Liste.';
+    }
+
+    function normalizeUser(user) {
+      return {
+        ...user,
+        accountLocked: !!user.accountLocked,
+        failedAttempts: Number(user.failedAttempts || 0),
+        timeoutUntil: Number(user.timeoutUntil || 0),
+        lockedPasswordHash: user.lockedPasswordHash || null
+      };
+    }
+
+    function render() {
+      const host = $('users');
+      host.replaceChildren();
+
+      users.forEach((user) => {
+        const row = document.createElement('article');
+        row.className = 'user';
+
+        const info = document.createElement('div');
+        info.className = 'user-meta';
+
+        const name = document.createElement('div');
+        name.className = 'user-name';
+        name.textContent = user.username;
+
+        const state = document.createElement('div');
+        const locked = !!user.accountLocked || getRemainingSeconds(user) > 0;
+        state.className = 'state' + (locked ? ' locked' : '');
+        const timeoutText = getRemainingSeconds(user) > 0 ? `Timeout: ${getRemainingSeconds(user)}s` : 'Timeout: 0s';
+        state.textContent = `${user.role === 'admin' ? 'Administrator' : 'Benutzer'} · ${locked ? 'Gesperrt' : 'Aktiv'} · Fehlversuche: ${Number(user.failedAttempts || 0)}/${LOGIN_SETTINGS.maxFailedAttempts} · ${timeoutText}`;
+
+        const actions = document.createElement('div');
+        actions.className = 'actions';
+
+        const reset = document.createElement('button');
+        reset.type = 'button';
+        reset.className = 'secondary';
+        reset.textContent = 'Passwort zurücksetzen';
+        reset.onclick = () => {
+          targetId = user.id;
+          $('targetLabel').textContent = `Neues Passwort für ${user.username} festlegen.`;
+          $('resetForm').classList.remove('hidden');
+          $('newPassword').focus();
+        };
+
+        const shorten = document.createElement('button');
+        shorten.type = 'button';
+        shorten.className = 'secondary';
+        shorten.textContent = '-10s';
+        shorten.onclick = () => {
+          if (!user.timeoutUntil) user.timeoutUntil = Date.now() + 1000;
+          user.timeoutUntil = Math.max(Date.now(), Number(user.timeoutUntil) - 10000);
+          user.accountLocked = getRemainingSeconds(user) > 0;
+          if (getRemainingSeconds(user) === 0) {
+            user.failedAttempts = 0;
+            user.timeoutUntil = 0;
+            user.accountLocked = false;
+          }
+          save();
+          render();
+        };
+
+        const extend = document.createElement('button');
+        extend.type = 'button';
+        extend.className = 'secondary';
+        extend.textContent = '+10s';
+        extend.onclick = () => {
+          user.timeoutUntil = (Number(user.timeoutUntil) || Date.now()) + 10000;
+          user.failedAttempts = Math.max(Number(user.failedAttempts || 0), LOGIN_SETTINGS.maxFailedAttempts);
+          user.accountLocked = true;
+          save();
+          render();
+        };
+
+        const lock = document.createElement('button');
+        lock.type = 'button';
+        lock.className = locked ? 'secondary' : 'danger';
+        lock.textContent = locked ? 'Entsperren' : 'Sperren';
+        lock.disabled = user.id === current.id;
+        lock.title = user.id === current.id ? 'Das aktuell angemeldete Administratorkonto kann hier nicht gesperrt werden.' : '';
+        lock.onclick = () => toggleLock(user);
+
+        info.append(name, state);
+        actions.append(reset, shorten, extend, lock);
+        row.append(info, actions);
+        host.append(row);
+      });
+    }
+
+    function toggleLock(user) {
+      if (user.id === current.id) return;
+      if (user.accountLocked || getRemainingSeconds(user) > 0) {
+        user.accountLocked = false;
+        user.timeoutUntil = 0;
+        user.failedAttempts = 0;
+        if (user.lockedPasswordHash) {
+          user.passwordHash = user.lockedPasswordHash;
+          delete user.lockedPasswordHash;
+        }
+        showMessage(`${user.username} wurde entsperrt.`);
+      } else {
+        user.lockedPasswordHash = user.passwordHash;
+        user.passwordHash = 'account-locked:' + crypto.randomUUID();
+        user.accountLocked = true;
+        user.timeoutUntil = 0;
+        user.failedAttempts = 0;
+        showMessage(`${user.username} wurde gesperrt.`);
+      }
+      save();
+      render();
+    }
+
+    $('resetForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (current?.role !== 'admin') return;
+
+      const password = $('newPassword').value;
+      if (password.length < 4) {
+        showMessage('Das Passwort muss mindestens 4 Zeichen lang sein.', true);
+        return;
+      }
+
+      const user = users.find((item) => item.id === targetId);
+      if (!user) return;
+
+      const passwordHash = await hash(password);
+      if (user.accountLocked || getRemainingSeconds(user) > 0) {
+        user.pendingPasswordHash = passwordHash;
+      } else {
+        user.passwordHash = passwordHash;
+      }
+
+      save();
+      showMessage(`Das Passwort für ${user.username} wurde zurückgesetzt.`);
+      closeReset();
+      render();
+    });
+
+    $('cancel').addEventListener('click', closeReset);
+    $('logout').addEventListener('click', () => {
+      sessionStorage.removeItem(SESSION_KEY);
+      location.href = './';
+    });
+
+    users = readUsers().map(normalizeUser);
+    save();
+    const sessionId = sessionStorage.getItem(SESSION_KEY);
+    current = users.find((user) => user.id === sessionId) || null;
+
+    if (current?.role === 'admin') {
+      $('admin').classList.remove('hidden');
+      render();
+    } else {
+      $('denied').classList.remove('hidden');
+    }
+  </script>
 </body>
 </html>

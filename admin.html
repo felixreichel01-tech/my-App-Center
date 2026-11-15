@@ -239,9 +239,37 @@ $('resetForm').addEventListener('submit', async e => {
 $('cancel').addEventListener('click', closeReset);
 
 // ---------- Tab: Timeout ----------
+let live = []; // Karten, deren Countdown live aktualisiert wird
+
+function paintTimeout(u, rem, statusEl, meta) {
+  const manual = !!u.lockedPasswordHash;
+  statusEl.textContent = manual ? 'Manuell gesperrt' : rem > 0 ? `Gesperrt · ${rem}s` : 'Nicht gesperrt';
+  statusEl.className = (manual || rem > 0) ? 'bad' : 'ok';
+  meta.textContent = `Fehlversuche: ${u.failedAttempts || 0} / ${MAX_ATTEMPTS} · Verbleibende Sperrzeit: ${rem} Sek.`;
+}
+
+// Zählt die Sperrzeit herunter, ohne die Buttons neu zu zeichnen
+function tick() {
+  if ($('timeouts').classList.contains('hidden')) return;
+  let rebuild = false;
+  live.forEach(x => {
+    const r = remaining(x.u);
+    if (r !== x.rem) {
+      if ((r === 0) !== (x.rem === 0)) rebuild = true;
+      x.rem = r;
+      if (r === 0 && !x.u.lockedPasswordHash && x.u.timeoutUntil) {
+        x.u.timeoutUntil = 0; x.u.failedAttempts = 0; x.u.accountLocked = false; save();
+      }
+      paintTimeout(x.u, r, x.statusEl, x.meta);
+    }
+  });
+  if (rebuild) renderTimeouts();
+}
+
 function renderTimeouts() {
   const host = $('timeoutList');
   host.replaceChildren();
+  live = [];
   const list = users.filter(u => u.role !== 'admin');
   if (!list.length) {
     host.append(el('div', 'Es sind noch keine normalen Benutzerkonten vorhanden.', 'muted'));
@@ -254,11 +282,11 @@ function renderTimeouts() {
 
     // Name + Status
     const head = el('div', '', 'row');
-    head.append(
-      el('b', u.username),
-      el('span', manual ? 'Manuell gesperrt' : rem > 0 ? `Gesperrt · ${rem}s` : 'Nicht gesperrt', (manual || rem > 0) ? 'bad' : 'ok')
-    );
-    const meta = el('div', `Fehlversuche: ${u.failedAttempts || 0} / ${MAX_ATTEMPTS} · Verbleibende Sperrzeit: ${rem} Sek.`, 'muted');
+    const statusEl = el('span');
+    head.append(el('b', u.username), statusEl);
+    const meta = el('div', '', 'muted');
+    paintTimeout(u, rem, statusEl, meta);
+    live.push({ u, rem, statusEl, meta });
 
     // Dauer wählen + setzen
     const form = el('form', '', 'row');
@@ -342,13 +370,12 @@ if (me && me.role === 'admin') {
   $('admin').classList.remove('hidden');
   refresh();
   // Countdown live aktualisieren
-  setInterval(() => {
-    if (!$('timeouts').classList.contains('hidden')) renderTimeouts();
-  }, 1000);
+  setInterval(tick, 1000);
 } else {
   $('denied').classList.remove('hidden');
 }
 </script>
 </body>
 </html>
+
 

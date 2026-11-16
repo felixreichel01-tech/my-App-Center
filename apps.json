@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My App Center</title>
+<style>
+  body { margin:0; font:16px system-ui,sans-serif; background:#0c1322; color:#edf6ff; }
+  .wrap { max-width:900px; margin:auto; padding:20px 15px 50px; }
+  .panel { background:#16233a; border:1px solid #304562; border-radius:14px; padding:16px; margin-top:14px; }
+  .card { background:#1d2c45; border:1px solid #304562; border-radius:12px; padding:12px; margin-top:10px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .space { justify-content:space-between; }
+  .muted { color:#afbdd2; font-size:14px; }
+  .ok { color:#34d399; }
+  .bad { color:#fca5a5; }
+  .hidden { display:none !important; }
+  h1, h2 { margin:0; }
+  h2 { font-size:20px; }
+  button, input, select { font:inherit; padding:10px 12px; border-radius:10px; border:1px solid #304562; }
+  button { background:#60a5fa; color:#071521; font-weight:700; border:0; cursor:pointer; }
+  button.gray { background:#1d2c45; color:#edf6ff; border:1px solid #304562; }
+  button.red { background:#ef4444; color:#fff; }
+  button.small { padding:4px 8px; font-size:13px; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .btnlink { display:inline-block; background:#60a5fa; color:#071521; font-weight:700; padding:10px 12px; border-radius:10px; text-decoration:none; }
+  .tab.active { background:#60a5fa; color:#071521; }
+  input, select { background:#0d1728; color:#edf6ff; width:100%; }
+  label { display:block; color:#afbdd2; font-size:14px; margin:8px 0 5px; }
+  .form { max-width:440px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; background:#0d1728; border:1px solid #304562; border-radius:999px; padding:4px 6px 4px 12px; font-size:14px; }
+  .tile { flex:1 1 140px; background:#1d2c45; border:1px solid #304562; border-radius:12px; padding:10px 12px; }
+  .tile b { display:block; font-size:22px; }
+  .icon { font-size:24px; }
+  .log { max-height:260px; overflow:auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="row space">
+    <div>
+      <h1>MY APP CENTER</h1>
+      <div class="muted">Deine Apps, Gruppen und Verwaltung an einem Ort.</div>
+    </div>
+    <div id="userbox" class="row hidden">
+      <span id="whoami" class="muted"></span>
+      <a id="adminLink" href="admin.html" class="hidden" style="color:inherit">Admin-Seite</a>
+      <button id="logout" class="gray" type="button">Abmelden</button>
+    </div>
+  </header>
+
+  <!-- ===== Anmeldung ===== -->
+  <section id="authView" class="panel">
+    <form id="loginForm" class="form">
+      <h2>Anmelden</h2>
+      <label for="loginUser">Benutzername</label>
+      <input id="loginUser" autocomplete="username" autocapitalize="none" required>
+      <label for="loginPass">Passwort</label>
+      <input id="loginPass" type="password" autocomplete="current-password" required>
+      <div class="row" style="margin-top:12px"><button type="submit">Anmelden</button></div>
+      <p class="muted" id="loginHint"></p>
+    </form>
+
+    <form id="setupForm" class="form hidden">
+      <h2>Ersteinrichtung</h2>
+      <p class="muted">Es gibt noch kein Konto. Lege jetzt das erste Administrator-Konto an.</p>
+      <label for="setupUser">Benutzername</label>
+      <input id="setupUser" autocomplete="username" autocapitalize="none" required>
+      <label for="setupPass">Passwort (mindestens 4 Zeichen)</label>
+      <input id="setupPass" type="password" minlength="4" autocomplete="new-password" required>
+      <div class="row" style="margin-top:12px"><button type="submit">Administrator anlegen</button></div>
+    </form>
+    <p id="loginMsg" role="status" style="min-height:22px"></p>
+  </section>
+
+  <!-- ===== Hauptbereich ===== -->
+  <section id="appView" class="hidden">
+    <div class="row" style="margin-top:16px">
+      <button class="tab gray active" data-tab="tabApps" type="button">Meine Apps</button>
+      <button class="tab gray" data-tab="tabGroups" type="button">Gruppen</button>
+      <button class="tab gray hidden" id="adminTabBtn" data-tab="tabAdmin" type="button">Verwaltung</button>
+    </div>
+    <p id="message" role="status" style="min-height:22px"></p>
+
+    <!-- Tab: Apps -->
+    <div id="tabApps">
+      <div class="panel">
+        <div class="row space">
+          <h2>Meine Apps <span id="appCount" class="muted"></span></h2>
+          <button id="showAppForm" type="button">＋ App hinzufügen</button>
+        </div>
+        <form id="appForm" class="form hidden" style="margin-top:10px">
+          <h2 id="appFormTitle" style="font-size:17px">App hinzufügen</h2>
+          <label for="appIcon">Symbol (z. B. ein Emoji)</label>
+          <input id="appIcon" maxlength="4" placeholder="📱">
+          <label for="appName">Name der App</label>
+          <input id="appName" maxlength="60" required>
+          <label for="appLink">Link</label>
+          <input id="appLink" placeholder="youtube://  oder  https://…" autocapitalize="none" required>
+          <div class="muted">Tipp: Mit App-Links öffnet sich direkt die App. Beispiele: youtube://, spotify://, whatsapp://, instagram://, tg://, maps://</div>
+          <div class="row" style="margin-top:10px">
+            <button type="submit">Speichern</button>
+            <button type="button" class="gray" id="appCancel">Abbrechen</button>
+          </div>
+        </form>
+        <div id="appList"></div>
+        <div class="row" style="margin-top:12px"><button id="clearApps" class="red" type="button">Alle Apps löschen</button></div>
+        <div class="row" style="margin-top:12px">
+          <button class="gray" id="exportApps" type="button">Apps als Datei sichern</button>
+          <button class="gray" id="importApps" type="button">Apps aus Datei laden</button>
+          <input type="file" id="importAppsFile" accept="application/json,.json" class="hidden">
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;margin-top:10px">
+          <input type="checkbox" id="autoSave" style="width:auto">
+          Bei jeder neuen App automatisch die Datei apps.json speichern
+        </label>
+        <p class="muted">Benutzer können Apps öffnen, hinzufügen, bearbeiten und löschen. Administratoren verwalten zusätzlich Benutzerkonten.</p>
+      </div>
+    </div>
+
+    <!-- Tab: Gruppen -->
+    <div id="tabGroups" class="hidden">
+      <div class="panel">
+        <div class="row space">
+          <h2>Gruppenverwaltung</h2>
+          <button id="showGroupForm" type="button">＋ Neue Gruppe</button>
+        </div>
+        <div class="muted">Erstelle Gruppen und verwalte ihre Mitglieder.</div>
+        <form id="groupForm" class="form hidden" style="margin-top:10px">
+          <label for="groupName">Gruppenname</label>
+          <input id="groupName" maxlength="60" required>
+          <div class="row" style="margin-top:10px">
+            <button type="submit">Erstellen</button>
+            <button type="button" class="gray" id="groupCancel">Abbrechen</button>
+          </div>
+        </form>
+        <div class="row" style="margin-top:12px">
+          <div class="tile"><span class="muted">Gruppen</span><b id="statGroups">0</b></div>
+          <div class="tile"><span class="muted">Mitglieder insgesamt</span><b id="statMembers">0</b></div>
+          <div class="tile"><span class="muted">Größte Gruppe</span><b id="statBiggest" style="font-size:17px">–</b></div>
+        </div>
+        <input id="groupSearch" placeholder="Gruppen oder Mitglieder suchen …" style="margin-top:12px">
+        <div id="groupList"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="gray" id="exportGroups" type="button">Exportieren</button>
+          <button class="gray" id="importGroups" type="button">Importieren</button>
+          <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+        </div>
+        <p class="muted">Gruppen werden in diesem Browser gespeichert. Sie werden nicht automatisch mit anderen Geräten geteilt.</p>
+      </div>
+    </div>
+
+    <!-- Tab: Verwaltung (nur Administratoren) -->
+    <div id="tabAdmin" class="hidden">
+      <div class="panel">
+        <h2>Benutzerverwaltung</h2>
+        <div class="muted">Konten verwalten und Login-Timeouts anpassen. Mit den Schritt-Buttons verkürzt oder verlängerst du eine Sperre.</div>
+        <div id="adminUsers"></div>
+      </div>
+
+      <div class="panel hidden" id="resetPanel">
+        <h2>Passwort zurücksetzen</h2>
+        <div class="muted" id="resetLabel"></div>
+        <form id="resetForm" class="form">
+          <label for="newPassword">Neues Passwort</label>
+          <input id="newPassword" type="password" minlength="4" autocomplete="new-password" required>
+          <div class="row" style="margin-top:10px">
+            <button type="submit">Passwort speichern</button>
+            <button type="button" class="gray" id="resetCancel">Abbrechen</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2>Neues Konto erstellen</h2>
+        <form id="createForm" class="form">
+          <label for="newUser">Benutzername</label>
+          <input id="newUser" autocapitalize="none" required>
+          <label for="newPass">Passwort (mindestens 4 Zeichen)</label>
+          <input id="newPass" type="password" minlength="4" autocomplete="new-password" required>
+          <label for="newRole">Rolle</label>
+          <select id="newRole"><option value="user">Benutzer</option><option value="admin">Administrator</option></select>
+          <div class="row" style="margin-top:10px"><button type="submit">Benutzer erstellen</button></div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h2>Standard-Login-Timeout</h2>
+        <div class="muted">Wie lange ein Benutzer nach 3 Fehlversuchen gesperrt wird.</div>
+        <form id="defTimeoutForm" class="form row" style="margin-top:8px">
+          <input id="defTimeout" type="number" min="30" step="30" required style="width:140px">
+          <span class="muted">Sekunden</span>
+          <button type="submit">Speichern</button>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="row space"><h2>Anmeldeverlauf</h2><button class="gray" id="clearLog" type="button">Verlauf löschen</button></div>
+        <div id="logList" class="log"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Komplett-Sicherung</h2>
+        <div class="muted">Sichert Apps, Gruppen, Konten und Verlauf in einer Datei. Die Datei enthält Passwort-Hashes, bewahre sie sicher auf. Beim Laden wird alles ersetzt.</div>
+        <div class="row" style="margin-top:10px">
+          <button class="gray" id="exportAll" type="button">Alles sichern</button>
+          <button class="gray" id="importAll" type="button">Alles laden</button>
+          <input type="file" id="importAllFile" accept="application/json,.json" class="hidden">
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+'use strict';
+
+const KEYS = {
+  apps: 'my-app-center-v1',
+  groups: 'my-app-center-groups-v1',
+  users: 'mac-admin-users-v2',
+  log: 'mac-admin-log-v2',
+  session: 'mac-session-v2',
+  timeout: 'mac-login-timeout-v1',
+  autosave: 'my-app-center-autosave-v1'
+};
+const MAX_ATTEMPTS = 3;
+// Schritt-Buttons in Sekunden. Hier kannst du die Schritte ändern.
+const STEPS = [-300, -60, -10, 10, 60, 300];
+
+const $ = id => document.getElementById(id);
+let users = [], apps = [], groups = [], fileApps = [];
+let me = null, resetId = null, editAppId = null, lockedId = null;
+let loginTimer = null, live = [];
+
+// ---------- Hilfsfunktionen ----------
+function uid() { return (crypto.randomUUID && crypto.randomUUID()) || Date.now() + '-' + Math.random().toString(16).slice(2); }
+function el(tag, text, cls) {
+  const e = document.createElement(tag);
+  if (text) e.textContent = text;
+  if (cls) e.className = cls;
+  return e;
+}
+function btn(text, cls, onclick) {
+  const b = el('button', text, cls);
+  b.type = 'button';
+  b.onclick = onclick;
+  return b;
+}
+function read(key, fallback) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v === null || v === undefined ? fallback : v; }
+  catch { return fallback; }
+}
+function write(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+function saveUsers() { write(KEYS.users, users); }
+async function hash(text) {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+function remaining(u) {
+  const t = Number(u.timeoutUntil) || 0;
+  return t > Date.now() ? Math.ceil((t - Date.now()) / 1000) : 0;
+}
+function getTimeoutSec() { return Math.round((Number(localStorage.getItem(KEYS.timeout)) || 60000) / 1000); }
+function msg(text, bad) { const m = $('message'); m.textContent = text; m.className = bad ? 'bad' : 'ok'; }
+function loginMsg(text, bad) { const m = $('loginMsg'); m.textContent = text; m.className = bad ? 'bad' : 'ok'; }
+function label(s) {
+  const a = Math.abs(s);
+  return (s > 0 ? '+' : '−') + (a >= 60 ? (a / 60) + ' Min' : a + 's');
+}
+function addLog(username, ok, text) {
+  const log = read(KEYS.log, []);
+  log.unshift({ time: Date.now(), username, ok, text });
+  write(KEYS.log, log.slice(0, 200));
+}
+
+// ---------- Daten laden / bereinigen ----------
+function normalizeUser(u) {
+  const n = {
+    ...u,
+    accountLocked: !!u.accountLocked,
+    failedAttempts: Number(u.failedAttempts || 0),
+    timeoutUntil: Number(u.timeoutUntil || 0),
+    lockedPasswordHash: u.lockedPasswordHash || null
+  };
+  // Abgelaufene automatische Sperren aufheben (manuelle Sperren bleiben)
+  if (n.accountLocked && n.timeoutUntil && n.timeoutUntil <= Date.now() && !n.lockedPasswordHash) {
+    n.accountLocked = false; n.timeoutUntil = 0; n.failedAttempts = 0;
+  }
+  return n;
+}
+function expireLock(u) {
+  if (u && !u.lockedPasswordHash && u.timeoutUntil && u.timeoutUntil <= Date.now()) {
+    u.timeoutUntil = 0; u.failedAttempts = 0; u.accountLocked = false;
+    saveUsers();
+  }
+}
+function normApps(list) {
+  return (Array.isArray(list) ? list : []).map(a => ({
+    id: a.id || uid(),
+    icon: String(a.icon || a.symbol || '📱'),
+    name: String(a.name || a.title || 'App'),
+    link: String(a.link || a.url || '')
+  }));
+}
+function normGroups(list) {
+  return (Array.isArray(list) ? list : []).map(g => ({
+    id: g.id || uid(),
+    name: String(g.name || g.title || 'Gruppe'),
+    members: (Array.isArray(g.members) ? g.members : [])
+      .map(m => typeof m === 'string' ? m : String((m && (m.name || m.username)) || ''))
+      .filter(Boolean)
+  }));
+}
+// App-Links wie youtube:// oder spotify: sind erlaubt, gefährliche Typen nicht
+const BLOCKED = ['javascript:', 'data:', 'vbscript:', 'file:', 'blob:'];
+function safeLink(link) {
+  try { const u = new URL(link); return BLOCKED.includes(u.protocol) ? '#' : u.href; } catch { return '#'; }
+}
+
+// ---------- Anmeldung ----------
+function showAuth() {
+  $('appView').classList.add('hidden');
+  $('userbox').classList.add('hidden');
+  $('authView').classList.remove('hidden');
+  const first = users.length === 0;
+  $('setupForm').classList.toggle('hidden', !first);
+  $('loginForm').classList.toggle('hidden', first);
+  $('loginHint').textContent = `Nach ${MAX_ATTEMPTS} falschen Anmeldeversuchen wird der Login für ${getTimeoutSec()} Sekunden gesperrt.`;
+}
+
+function showApp() {
+  $('authView').classList.add('hidden');
+  $('appView').classList.remove('hidden');
+  $('userbox').classList.remove('hidden');
+  $('whoami').textContent = me.username + (me.role === 'admin' ? ' (Administrator)' : '');
+  const admin = me.role === 'admin';
+  $('adminTabBtn').classList.toggle('hidden', !admin);
+  $('adminLink').classList.toggle('hidden', !admin);
+  $('defTimeout').value = getTimeoutSec();
+  setTab('tabApps');
+  renderApps(); renderGroups();
+  if (admin) { renderAdminUsers(); renderLog(); }
+}
+
+function startLoginTimer() {
+  clearInterval(loginTimer);
+  const update = () => {
+    const u = users.find(x => x.id === lockedId);
+    const r = u ? remaining(u) : 0;
+    if (r > 0) {
+      loginMsg(`Zu viele Fehlversuche. Bitte warte noch ${r} Sekunden.`, true);
+    } else {
+      clearInterval(loginTimer);
+      expireLock(u);
+      loginMsg('Die Sperre ist abgelaufen. Du kannst es erneut versuchen.', false);
+    }
+  };
+  update();
+  loginTimer = setInterval(update, 1000);
+}
+
+$('loginForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = $('loginUser').value.trim();
+  const pw = $('loginPass').value;
+  const u = users.find(x => x.username.toLowerCase() === name.toLowerCase());
+  if (!u) {
+    addLog(name || '?', false, 'Unbekannter Benutzer');
+    loginMsg('Benutzername oder Passwort falsch.', true);
+    return;
+  }
+  expireLock(u);
+  if (u.lockedPasswordHash) {
+    addLog(u.username, false, 'Konto vom Administrator gesperrt');
+    loginMsg('Dieses Konto wurde vom Administrator gesperrt.', true);
+    return;
+  }
+  if (remaining(u) > 0) { lockedId = u.id; startLoginTimer(); return; }
+  const h = await hash(pw);
+  if (h === u.passwordHash) {
+    u.failedAttempts = 0; u.timeoutUntil = 0; u.accountLocked = false;
+    saveUsers();
+    addLog(u.username, true, 'Angemeldet');
+    sessionStorage.setItem(KEYS.session, u.id);
+    me = u;
+    clearInterval(loginTimer);
+    $('loginForm').reset();
+    loginMsg('');
+    showApp();
+  } else {
+    u.failedAttempts = (u.failedAttempts || 0) + 1;
+    if (u.failedAttempts >= MAX_ATTEMPTS) {
+      u.timeoutUntil = Date.now() + getTimeoutSec() * 1000;
+      u.accountLocked = true;
+      addLog(u.username, false, 'Falsches Passwort – Konto vorübergehend gesperrt');
+      lockedId = u.id;
+      saveUsers();
+      startLoginTimer();
+    } else {
+      addLog(u.username, false, 'Falsches Passwort');
+      saveUsers();
+      loginMsg(`Benutzername oder Passwort falsch. Versuch ${u.failedAttempts} von ${MAX_ATTEMPTS}.`, true);
+    }
+  }
+});
+
+$('setupForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = $('setupUser').value.trim();
+  const pw = $('setupPass').value;
+  if (!name || pw.length < 4) { loginMsg('Bitte Benutzername und ein Passwort mit mindestens 4 Zeichen eingeben.', true); return; }
+  const u = { id: uid(), username: name, role: 'admin', passwordHash: await hash(pw), accountLocked: false, failedAttempts: 0, timeoutUntil: 0, lockedPasswordHash: null };
+  users.push(u);
+  saveUsers();
+  addLog(u.username, true, 'Administrator angelegt');
+  sessionStorage.setItem(KEYS.session, u.id);
+  me = u;
+  $('setupForm').reset();
+  loginMsg('');
+  showApp();
+});
+
+$('logout').addEventListener('click', () => {
+  sessionStorage.removeItem(KEYS.session);
+  me = null;
+  showAuth();
+});
+
+// ---------- Tabs ----------
+function setTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+  ['tabApps', 'tabGroups', 'tabAdmin'].forEach(t => $(t).classList.toggle('hidden', t !== id));
+  if (id === 'tabAdmin') { renderAdminUsers(); renderLog(); }
+}
+document.querySelectorAll('.tab').forEach(b => { b.onclick = () => { setTab(b.dataset.tab); msg(''); }; });
+
+// ---------- Apps ----------
+// Feste Apps kommen aus der Datei apps.json im Repository und gelten für alle Benutzer.
+// Felder: icon, name, link (App-Link wie youtube://), web (optional, Webseite als Ersatz),
+// nurAdmin (optional, true = nur Administratoren sehen die App)
+async function loadFileApps() {
+  try {
+    const res = await fetch('apps.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const list = Array.isArray(data) ? data : data.apps;
+    fileApps = (Array.isArray(list) ? list : []).filter(a => a && typeof a === 'object').map((a, i) => ({
+      id: 'file-' + i,
+      icon: String(a.icon || '📱'),
+      name: String(a.name || 'App'),
+      link: String(a.link || ''),
+      web: a.web ? String(a.web) : '',
+      adminOnly: !!a.nurAdmin,
+      fromFile: true
+    })).filter(a => safeLink(a.link) !== '#');
+    if (me) renderApps();
+  } catch { /* keine Datei vorhanden oder nicht lesbar */ }
+}
+function visibleFileApps() { return fileApps.filter(a => !a.adminOnly || (me && me.role === 'admin')); }
+function localOnlyApps() { return apps.filter(a => !fileApps.some(f => f.link === a.link && f.name === a.name)); }
+// Komplette Liste im Format von apps.json (feste und eigene Apps)
+function exportList() {
+  const clean = a => {
+    const o = { icon: a.icon, name: a.name, link: a.link };
+    if (a.web) o.web = a.web;
+    if (a.adminOnly) o.nurAdmin = true;
+    return o;
+  };
+  return [...fileApps.map(clean), ...localOnlyApps().map(clean)];
+}
+// Öffnet die App. Gibt es eine Webseite als Ersatz, wird sie geöffnet, falls die App nicht startet.
+function launch(a, ev) {
+  if (!a.web || safeLink(a.web) === '#') return;
+  ev.preventDefault();
+  const t = setTimeout(() => { if (document.visibilityState === 'visible') location.href = safeLink(a.web); }, 1800);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') clearTimeout(t); }, { once: true });
+  location.href = safeLink(a.link);
+}
+
+function renderApps() {
+  const host = $('appList');
+  host.replaceChildren();
+  const all = [...visibleFileApps(), ...localOnlyApps()];
+  $('appCount').textContent = `${all.length} ${all.length === 1 ? 'App' : 'Apps'}`;
+  if (!all.length) { host.append(el('div', 'Noch keine Apps. Tippe auf „＋ App hinzufügen“.', 'muted')); return; }
+  all.forEach(a => {
+    const card = el('div', '', 'card row space');
+    const left = el('div', '', 'row');
+    left.append(el('span', a.icon, 'icon'), el('b', a.name));
+    const actions = el('div', '', 'row');
+    const open = el('a', 'Öffnen', 'btnlink');
+    open.href = safeLink(a.link); // im selben Tab, damit das Handy die App öffnen kann
+    open.onclick = ev => launch(a, ev);
+    actions.append(open);
+    if (a.fromFile) {
+      left.append(el('span', 'fest', 'muted'));
+    } else {
+      actions.append(
+        btn('Bearbeiten', 'gray', () => openAppForm(a)),
+        btn('Löschen', 'red', () => {
+          if (!confirm(`App „${a.name}“ löschen?`)) return;
+          apps = apps.filter(x => x.id !== a.id);
+          write(KEYS.apps, apps);
+          renderApps();
+        })
+      );
+    }
+    card.append(left, actions);
+    host.append(card);
+  });
+}
+
+function openAppForm(a) {
+  editAppId = a ? a.id : null;
+  $('appFormTitle').textContent = a ? 'App bearbeiten' : 'App hinzufügen';
+  $('appIcon').value = a ? a.icon : '';
+  $('appName').value = a ? a.name : '';
+  $('appLink').value = a ? a.link : '';
+  $('appForm').classList.remove('hidden');
+  $('appName').focus();
+}
+function closeAppForm() { editAppId = null; $('appForm').reset(); $('appForm').classList.add('hidden'); }
+$('showAppForm').onclick = () => openAppForm(null);
+$('appCancel').onclick = closeAppForm;
+
+$('appForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('appName').value.trim();
+  let link = $('appLink').value.trim();
+  if (!name || !link) return;
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(link)) link = 'https://' + link;
+  let url;
+  try { url = new URL(link); } catch { msg('Der Link ist ungültig.', true); return; }
+  if (BLOCKED.includes(url.protocol)) { msg('Dieser Link-Typ ist nicht erlaubt.', true); return; }
+  const icon = $('appIcon').value.trim() || '📱';
+  const isNew = !editAppId;
+  if (editAppId) {
+    const a = apps.find(x => x.id === editAppId);
+    if (a) { a.name = name; a.link = url.href; a.icon = icon; }
+  } else {
+    apps.push({ id: uid(), icon, name, link: url.href });
+  }
+  write(KEYS.apps, apps);
+  closeAppForm();
+  renderApps();
+  if (isNew && autosaveOn()) { download('apps.json', exportList()); msg('App gespeichert und apps.json heruntergeladen.'); }
+  else msg('App gespeichert.');
+});
+
+$('clearApps').onclick = () => {
+  if (!apps.length) return;
+  if (!confirm('Wirklich alle Apps löschen?')) return;
+  apps = [];
+  write(KEYS.apps, apps);
+  renderApps();
+};
+
+// ---------- Sicherungsdateien ----------
+function download(name, data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function autosaveOn() { return localStorage.getItem(KEYS.autosave) !== '0'; }
+$('autoSave').checked = autosaveOn();
+$('autoSave').onchange = () => localStorage.setItem(KEYS.autosave, $('autoSave').checked ? '1' : '0');
+
+$('exportApps').onclick = () => download('apps.json', exportList());
+$('importApps').onclick = () => $('importAppsFile').click();
+$('importAppsFile').addEventListener('change', async () => {
+  const file = $('importAppsFile').files[0];
+  $('importAppsFile').value = '';
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const list = normApps(Array.isArray(data) ? data : data.apps).filter(a => safeLink(a.link) !== '#');
+    let added = 0;
+    list.forEach(a => {
+      if (!apps.some(x => x.link === a.link && x.name === a.name)) { a.id = uid(); apps.push(a); added++; }
+    });
+    write(KEYS.apps, apps);
+    renderApps();
+    msg(`${added} neue Apps geladen.`);
+  } catch { msg('Die Datei konnte nicht gelesen werden.', true); }
+});
+
+// Komplett-Sicherung (nur Administratoren)
+$('exportAll').onclick = () => {
+  if (!me || me.role !== 'admin') return;
+  download('my-app-center-backup.json', { version: 1, apps, groups, users, log: read(KEYS.log, []), timeout: getTimeoutSec() });
+};
+$('importAll').onclick = () => { if (me && me.role === 'admin') $('importAllFile').click(); };
+$('importAllFile').addEventListener('change', async () => {
+  const file = $('importAllFile').files[0];
+  $('importAllFile').value = '';
+  if (!file || !me || me.role !== 'admin') return;
+  try {
+    const data = JSON.parse(await file.text());
+    const list = Array.isArray(data.users) ? data.users.filter(x => x && typeof x === 'object') : [];
+    if (!list.some(x => x.role === 'admin' && x.id && x.username && x.passwordHash)) {
+      msg('Die Sicherung enthält keinen Administrator und wurde nicht geladen.', true);
+      return;
+    }
+    if (!confirm('Alles ersetzen? Apps, Gruppen, Konten und Verlauf werden durch die Datei ersetzt. Danach musst du dich neu anmelden.')) return;
+    write(KEYS.users, list);
+    write(KEYS.apps, normApps(data.apps).filter(a => safeLink(a.link) !== '#'));
+    write(KEYS.groups, normGroups(data.groups));
+    write(KEYS.log, Array.isArray(data.log) ? data.log : []);
+    if (Number(data.timeout) >= 10) localStorage.setItem(KEYS.timeout, String(Number(data.timeout) * 1000));
+    sessionStorage.removeItem(KEYS.session);
+    location.reload();
+  } catch { msg('Die Datei konnte nicht gelesen werden.', true); }
+});
+
+// ---------- Gruppen ----------
+function saveGroups() { write(KEYS.groups, groups); }
+
+function renderGroups() {
+  const q = $('groupSearch').value.trim().toLowerCase();
+  const total = groups.reduce((n, g) => n + g.members.length, 0);
+  const biggest = groups.reduce((b, g) => (!b || g.members.length > b.members.length) ? g : b, null);
+  $('statGroups').textContent = groups.length;
+  $('statMembers').textContent = total;
+  $('statBiggest').textContent = biggest && biggest.members.length ? `${biggest.name} (${biggest.members.length})` : '–';
+
+  const host = $('groupList');
+  host.replaceChildren();
+  const shown = groups.filter(g => !q || g.name.toLowerCase().includes(q) || g.members.some(m => m.toLowerCase().includes(q)));
+  if (!shown.length) { host.append(el('div', groups.length ? 'Keine Treffer.' : 'Noch keine Gruppen.', 'muted')); return; }
+
+  shown.forEach(g => {
+    const card = el('div', '', 'card');
+    const head = el('div', '', 'row space');
+    const title = el('div');
+    title.append(el('b', g.name), el('div', `${g.members.length} ${g.members.length === 1 ? 'Mitglied' : 'Mitglieder'}`, 'muted'));
+    head.append(title, btn('Gruppe löschen', 'red', () => {
+      if (!confirm(`Gruppe „${g.name}“ löschen?`)) return;
+      groups = groups.filter(x => x.id !== g.id);
+      saveGroups(); renderGroups();
+    }));
+
+    const chips = el('div', '', 'row');
+    chips.style.marginTop = '10px';
+    g.members.forEach(m => {
+      const chip = el('span', '', 'chip');
+      chip.append(el('span', m), btn('✕', 'gray small', () => {
+        g.members = g.members.filter(x => x !== m);
+        saveGroups(); renderGroups();
+      }));
+      chips.append(chip);
+    });
+
+    const form = el('form', '', 'row');
+    form.style.marginTop = '10px';
+    const input = el('input');
+    input.placeholder = 'Mitglied hinzufügen';
+    input.maxLength = 60;
+    input.style.flex = '1 1 160px';
+    const add = el('button', 'Hinzufügen');
+    add.type = 'submit';
+    form.append(input, add);
+    form.onsubmit = e => {
+      e.preventDefault();
+      const name = input.value.trim();
+      if (!name) return;
+      if (g.members.some(m => m.toLowerCase() === name.toLowerCase())) { msg('Dieses Mitglied ist schon in der Gruppe.', true); return; }
+      g.members.push(name);
+      saveGroups(); renderGroups();
+    };
+
+    card.append(head, chips, form);
+    host.append(card);
+  });
+}
+
+$('showGroupForm').onclick = () => { $('groupForm').classList.remove('hidden'); $('groupName').focus(); };
+$('groupCancel').onclick = () => { $('groupForm').reset(); $('groupForm').classList.add('hidden'); };
+$('groupForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('groupName').value.trim();
+  if (!name) return;
+  groups.push({ id: uid(), name, members: [] });
+  saveGroups();
+  $('groupForm').reset();
+  $('groupForm').classList.add('hidden');
+  renderGroups();
+});
+$('groupSearch').addEventListener('input', renderGroups);
+
+$('exportGroups').onclick = () => {
+  const blob = new Blob([JSON.stringify(groups, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'gruppen.json';
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+$('importGroups').onclick = () => $('importFile').click();
+$('importFile').addEventListener('change', async () => {
+  const file = $('importFile').files[0];
+  $('importFile').value = '';
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    const list = normGroups(Array.isArray(data) ? data : data.groups);
+    if (!confirm(`${list.length} Gruppen importieren? Die bisherigen Gruppen werden ersetzt.`)) return;
+    groups = list;
+    saveGroups(); renderGroups();
+    msg('Gruppen importiert.');
+  } catch { msg('Die Datei konnte nicht gelesen werden.', true); }
+});
+
+// ---------- Verwaltung: Benutzer ----------
+function adminCount() { return users.filter(u => u.role === 'admin').length; }
+function userStatus(u) {
+  const rem = remaining(u);
+  const state = u.lockedPasswordHash ? 'Manuell gesperrt' : rem > 0 ? `Timeout aktiv · ${rem}s` : 'Aktiv';
+  return `${u.role === 'admin' ? 'Administrator' : 'Benutzer'} · ${state} · Fehlversuche: ${u.failedAttempts || 0}/${MAX_ATTEMPTS}`;
+}
+
+function renderAdminUsers() {
+  if (!me || me.role !== 'admin') return;
+  const host = $('adminUsers');
+  host.replaceChildren();
+  live = [];
+  users.forEach(u => {
+    const self = u.id === me.id;
+    const rem = remaining(u);
+    const manual = !!u.lockedPasswordHash;
+    const onlyAdmin = u.role === 'admin' && adminCount() === 1;
+
+    const card = el('div', '', 'card');
+    const status = el('div', userStatus(u), 'muted');
+    const info = el('div');
+    info.append(el('b', u.username + (self ? ' (du)' : '')), status);
+
+    const row1 = el('div', '', 'row');
+    row1.style.marginTop = '10px';
+    const roleBtn = btn(u.role === 'admin' ? 'Zum Benutzer machen' : 'Zum Admin machen', 'gray', () => {
+      u.role = u.role === 'admin' ? 'user' : 'admin';
+      saveUsers(); renderAdminUsers();
+    });
+    roleBtn.disabled = self || onlyAdmin;
+    const lockBtn = btn(manual ? 'Entsperren' : 'Sperren', manual ? 'gray' : 'red', () => toggleLock(u));
+    lockBtn.disabled = self;
+    const delBtn = btn('Löschen', 'red', () => {
+      if (!confirm(`Benutzer ${u.username} löschen?`)) return;
+      users = users.filter(x => x.id !== u.id);
+      saveUsers(); renderAdminUsers();
+    });
+    delBtn.disabled = self || onlyAdmin;
+    row1.append(
+      btn('Umbenennen', 'gray', () => renameUser(u)),
+      btn('Passwort', 'gray', () => startReset(u)),
+      roleBtn, lockBtn, delBtn
+    );
+
+    const row2 = el('div', '', 'row');
+    row2.style.marginTop = '8px';
+    STEPS.forEach(s => {
+      const b = btn(label(s), 'gray', () => change(u, s * 1000));
+      b.disabled = self || (s < 0 && rem === 0);
+      row2.append(b);
+    });
+    const clr = btn('Timeout aufheben', 'gray', () => unlock(u));
+    clr.disabled = self || (rem === 0 && !manual);
+    row2.append(clr);
+
+    card.append(info, row1, row2);
+    host.append(card);
+    live.push({ u, status, rem });
+  });
+}
+
+// Zählt die Sperrzeit live herunter, ohne die Buttons neu zu zeichnen
+function tick() {
+  if (!me || me.role !== 'admin' || $('tabAdmin').classList.contains('hidden')) return;
+  let rebuild = false;
+  live.forEach(x => {
+    const r = remaining(x.u);
+    if (r !== x.rem) {
+      if ((r === 0) !== (x.rem === 0)) rebuild = true;
+      x.rem = r;
+      if (r === 0) expireLock(x.u);
+      x.status.textContent = userStatus(x.u);
+    }
+  });
+  if (rebuild) renderAdminUsers();
+}
+setInterval(tick, 1000);
+
+function change(u, deltaMs) {
+  const now = Date.now();
+  const base = Number(u.timeoutUntil) > now ? Number(u.timeoutUntil) : now;
+  const next = Math.max(now, base + deltaMs);
+  u.timeoutUntil = next > now ? next : 0;
+  if (!u.lockedPasswordHash) {
+    u.accountLocked = !!u.timeoutUntil;
+    if (deltaMs > 0) u.failedAttempts = Math.max(u.failedAttempts || 0, MAX_ATTEMPTS);
+  }
+  if (!u.timeoutUntil) u.failedAttempts = 0;
+  saveUsers(); renderAdminUsers();
+}
+function unlock(u) {
+  u.timeoutUntil = 0; u.failedAttempts = 0;
+  if (!u.lockedPasswordHash) u.accountLocked = false;
+  saveUsers(); renderAdminUsers();
+  msg(`Timeout für ${u.username} wurde aufgehoben.`);
+}
+function toggleLock(u) {
+  if (u.id === me.id) return;
+  if (u.lockedPasswordHash) {
+    u.passwordHash = u.lockedPasswordHash;
+    delete u.lockedPasswordHash;
+    u.accountLocked = false;
+    if (u.pendingPasswordHash) { u.passwordHash = u.pendingPasswordHash; delete u.pendingPasswordHash; }
+    msg(`${u.username} wurde entsperrt.`);
+  } else {
+    u.lockedPasswordHash = u.passwordHash;
+    u.passwordHash = 'account-locked:' + uid();
+    u.accountLocked = true;
+    u.timeoutUntil = 0;
+    msg(`${u.username} wurde manuell gesperrt.`);
+  }
+  saveUsers(); renderAdminUsers();
+}
+function renameUser(u) {
+  const input = prompt('Neuer Benutzername:', u.username);
+  if (input === null) return;
+  const name = input.trim();
+  if (!name) { msg('Der Benutzername darf nicht leer sein.', true); return; }
+  if (users.some(x => x.id !== u.id && x.username.toLowerCase() === name.toLowerCase())) { msg('Diesen Benutzernamen gibt es schon.', true); return; }
+  u.username = name;
+  saveUsers(); renderAdminUsers();
+  if (u.id === me.id) $('whoami').textContent = me.username + ' (Administrator)';
+  msg('Benutzername geändert.');
+}
+
+function startReset(u) {
+  resetId = u.id;
+  $('resetLabel').textContent = `Neues Passwort für ${u.username} festlegen.`;
+  $('resetPanel').classList.remove('hidden');
+  $('newPassword').focus();
+}
+function closeReset() { resetId = null; $('resetForm').reset(); $('resetPanel').classList.add('hidden'); }
+$('resetCancel').onclick = closeReset;
+$('resetForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!me || me.role !== 'admin') return;
+  const pw = $('newPassword').value;
+  if (pw.length < 4) { msg('Das Passwort muss mindestens 4 Zeichen lang sein.', true); return; }
+  const u = users.find(x => x.id === resetId);
+  if (!u) return;
+  const h = await hash(pw);
+  if (u.lockedPasswordHash) u.pendingPasswordHash = h; else u.passwordHash = h;
+  saveUsers();
+  msg(`Das Passwort für ${u.username} wurde zurückgesetzt.`);
+  closeReset();
+});
+
+$('createForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!me || me.role !== 'admin') return;
+  const name = $('newUser').value.trim();
+  const pw = $('newPass').value;
+  if (!name || pw.length < 4) { msg('Bitte Benutzername und ein Passwort mit mindestens 4 Zeichen eingeben.', true); return; }
+  if (users.some(x => x.username.toLowerCase() === name.toLowerCase())) { msg('Diesen Benutzernamen gibt es schon.', true); return; }
+  users.push({ id: uid(), username: name, role: $('newRole').value, passwordHash: await hash(pw), accountLocked: false, failedAttempts: 0, timeoutUntil: 0, lockedPasswordHash: null });
+  saveUsers();
+  $('createForm').reset();
+  renderAdminUsers();
+  msg(`Benutzer ${name} wurde erstellt.`);
+});
+
+$('defTimeoutForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const s = Math.round(Number($('defTimeout').value));
+  if (!(s >= 30)) { msg('Bitte mindestens 30 Sekunden eingeben.', true); return; }
+  localStorage.setItem(KEYS.timeout, String(s * 1000));
+  msg(`Standard-Timeout auf ${s} Sekunden gesetzt.`);
+});
+
+// ---------- Verwaltung: Verlauf ----------
+function renderLog() {
+  const host = $('logList');
+  host.replaceChildren();
+  const log = read(KEYS.log, []);
+  if (!log.length) { host.append(el('div', 'Noch keine Einträge.', 'muted')); return; }
+  log.slice(0, 50).forEach(item => {
+    const row = el('div', '', 'card');
+    row.append(
+      el('b', (item.ok ? '✓ ' : '✗ ') + item.username, item.ok ? 'ok' : 'bad'),
+      el('div', `${new Date(item.time).toLocaleString('de-DE')} · ${item.text}`, 'muted')
+    );
+    host.append(row);
+  });
+}
+$('clearLog').onclick = () => {
+  if (!confirm('Anmeldeverlauf löschen?')) return;
+  write(KEYS.log, []);
+  renderLog();
+};
+
+// ---------- Start ----------
+users = read(KEYS.users, []).filter(u => u && typeof u === 'object').map(normalizeUser);
+if (users.length) saveUsers();
+apps = normApps(read(KEYS.apps, []));
+groups = normGroups(read(KEYS.groups, []));
+const sessionId = sessionStorage.getItem(KEYS.session);
+me = users.find(u => u.id === sessionId) || null;
+if (me && !me.lockedPasswordHash) showApp(); else { me = null; showAuth(); }
+loadFileApps();
+</script>
+</body>
+</html>
